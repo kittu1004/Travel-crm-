@@ -191,10 +191,8 @@ fun CrmDarkSidebar(
 @Composable
 fun CommandCenterHeader(
   isCompactScreen: Boolean,
-  isSplitSidebarVisible: Boolean,
   isBusy: Boolean,
   onOpenDrawer: () -> Unit,
-  onToggleSplitSidebar: () -> Unit,
   onLoadDemoData: () -> Unit,
   onNewBooking: () -> Unit,
   onViewWebsite: () -> Unit,
@@ -245,26 +243,6 @@ fun CommandCenterHeader(
             text = "Real-time fleet performance, revenue metrics, and booking control.",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondarySlate
-          )
-        }
-      }
-
-      if (isCompactScreen) {
-        IconButton(
-          onClick = onToggleSplitSidebar,
-          modifier = Modifier
-            .padding(start = 6.dp)
-            .size(40.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-            .background(if (isSplitSidebarVisible) DemoDataBlueBg else Color.White)
-            .testTag("toggle_sidebar_split_button")
-        ) {
-          Icon(
-            imageVector = Icons.Default.ViewSidebar,
-            contentDescription = "Toggle Split Sidebar View",
-            tint = if (isSplitSidebarVisible) DemoDataBlueText else TextSecondarySlate,
-            modifier = Modifier.size(20.dp)
           )
         }
       }

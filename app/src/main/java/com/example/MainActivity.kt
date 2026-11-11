@@ -73,9 +73,11 @@ import com.example.ui.components.CrmDarkSidebar
 import com.example.ui.components.CrmModuleDispatcher
 import com.example.ui.components.CustomerWebsitePreviewDialog
 import com.example.ui.components.DashboardOverviewContent
+import com.example.ui.components.InvoicePdfGeneratedDialog
 import com.example.ui.components.KpiCardSpec
 import com.example.ui.components.KpiDetailsDialog
 import com.example.ui.components.NewBookingDialog
+import com.example.ui.components.TripExpenseEntryDialog
 import com.example.ui.theme.CanvasBackground
 import com.example.ui.theme.FleetCRMTheme
 import com.example.ui.theme.KpiGreenBg
@@ -142,6 +144,7 @@ fun FleetCrmCommandCenterScreen(
   val selectedSection by viewModel.selectedSection.collectAsStateWithLifecycle()
   val selectedInflowCategory by viewModel.selectedInflowCategory.collectAsStateWithLifecycle()
   val statusBanner by viewModel.statusBanner.collectAsStateWithLifecycle()
+  val latestInvoiceBooking by viewModel.latestInvoiceBooking.collectAsStateWithLifecycle()
   val isActionBusy by viewModel.isActionBusy.collectAsStateWithLifecycle()
   val agencyName by viewModel.agencyName.collectAsStateWithLifecycle()
   val agencyGstin by viewModel.agencyGstin.collectAsStateWithLifecycle()
@@ -165,16 +168,26 @@ fun FleetCrmCommandCenterScreen(
   }
 
   var showNewBookingDialog by remember { mutableStateOf(false) }
+  var editingBooking by remember { mutableStateOf<Booking?>(null) }
+
   var showAddDriverDialog by remember { mutableStateOf(false) }
+  var editingDriver by remember { mutableStateOf<Driver?>(null) }
+
   var showAddVehicleDialog by remember { mutableStateOf(false) }
+  var editingVehicle by remember { mutableStateOf<Vehicle?>(null) }
+
   var showAddLeadDialog by remember { mutableStateOf(false) }
+  var editingLead by remember { mutableStateOf<Lead?>(null) }
+
   var showAddCustomerDialog by remember { mutableStateOf(false) }
+  var editingCustomer by remember { mutableStateOf<Customer?>(null) }
+
+  var editingExpenseBooking by remember { mutableStateOf<Booking?>(null) }
   var showWebsitePreviewDialog by remember { mutableStateOf(false) }
   var showApkDownloadDialog by remember { mutableStateOf(false) }
   var inspectedKpiSpec by remember { mutableStateOf<KpiCardSpec?>(null) }
 
   val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-  var isSplitSidebarVisibleOnCompact by remember { mutableStateOf(false) }
 
   BoxWithConstraints(
     modifier = Modifier
@@ -183,10 +196,9 @@ fun FleetCrmCommandCenterScreen(
       .windowInsetsPadding(WindowInsets.safeDrawing)
   ) {
     val isWideScreen = maxWidth >= 700.dp
-    val showPermanentSidebar = isWideScreen || isSplitSidebarVisibleOnCompact
+    val showPermanentSidebar = isWideScreen
     val kpiColumns = when {
       maxWidth >= 840.dp -> 4
-      showPermanentSidebar && maxWidth < 700.dp -> 1
       else -> 2
     }
 
@@ -217,7 +229,7 @@ fun FleetCrmCommandCenterScreen(
             driverCount = drivers.size.coerceAtLeast(4),
             onSelectSection = { viewModel.selectSection(it) },
             modifier = Modifier
-              .width(if (isWideScreen) 235.dp else 185.dp)
+              .width(235.dp)
               .fillMaxHeight()
           )
         }
@@ -231,12 +243,13 @@ fun FleetCrmCommandCenterScreen(
         ) {
           CommandCenterHeader(
             isCompactScreen = !isWideScreen,
-            isSplitSidebarVisible = isSplitSidebarVisibleOnCompact,
             isBusy = isActionBusy,
             onOpenDrawer = { scope.launch { drawerState.open() } },
-            onToggleSplitSidebar = { isSplitSidebarVisibleOnCompact = !isSplitSidebarVisibleOnCompact },
             onLoadDemoData = { viewModel.loadLiveDemoData() },
-            onNewBooking = { showNewBookingDialog = true },
+            onNewBooking = {
+              editingBooking = null
+              showNewBookingDialog = true
+            },
             onViewWebsite = { showWebsitePreviewDialog = true },
             onDownloadApk = { showApkDownloadDialog = true }
           )
@@ -303,11 +316,26 @@ fun FleetCrmCommandCenterScreen(
               defaultGstPercent = defaultGstPercent,
               userEmail = userEmail,
               onBackToDashboard = { viewModel.selectSection(CrmSection.DASHBOARD) },
-              onOpenNewBooking = { showNewBookingDialog = true },
-              onOpenAddLead = { showAddLeadDialog = true },
-              onOpenAddDriver = { showAddDriverDialog = true },
-              onOpenAddVehicle = { showAddVehicleDialog = true },
-              onOpenAddCustomer = { showAddCustomerDialog = true },
+              onOpenNewBooking = {
+                editingBooking = null
+                showNewBookingDialog = true
+              },
+              onOpenAddLead = {
+                editingLead = null
+                showAddLeadDialog = true
+              },
+              onOpenAddDriver = {
+                editingDriver = null
+                showAddDriverDialog = true
+              },
+              onOpenAddVehicle = {
+                editingVehicle = null
+                showAddVehicleDialog = true
+              },
+              onOpenAddCustomer = {
+                editingCustomer = null
+                showAddCustomerDialog = true
+              },
               onConvertLead = { viewModel.convertLeadToBooking(it) },
               onDeleteLead = { viewModel.deleteLead(it) },
               onUpdateBookingStatus = { b, st -> viewModel.updateBookingStatus(b, st) },
@@ -323,7 +351,33 @@ fun FleetCrmCommandCenterScreen(
               onSignOut = {
                 signOut(credentialManager = credentialManager, scope = scope)
               },
-              onOpenApkDownloadCenter = { showApkDownloadDialog = true }
+              onOpenApkDownloadCenter = { showApkDownloadDialog = true },
+              onEditBooking = { booking ->
+                editingBooking = booking
+                showNewBookingDialog = true
+              },
+              onEditLead = { lead ->
+                editingLead = lead
+                showAddLeadDialog = true
+              },
+              onEditDriver = { driver ->
+                editingDriver = driver
+                showAddDriverDialog = true
+              },
+              onEditVehicle = { vehicle ->
+                editingVehicle = vehicle
+                showAddVehicleDialog = true
+              },
+              onEditCustomer = { customer ->
+                editingCustomer = customer
+                showAddCustomerDialog = true
+              },
+              onEditTripExpenses = { booking ->
+                editingExpenseBooking = booking
+              },
+              onDownloadInvoicePdf = { booking ->
+                viewModel.openInvoicePdfForBooking(booking)
+              }
             )
           }
 
@@ -345,45 +399,140 @@ fun FleetCrmCommandCenterScreen(
   if (showNewBookingDialog) {
     NewBookingDialog(
       defaultDate = viewModel.todayDateString(),
-      onDismiss = { showNewBookingDialog = false },
+      initialBooking = editingBooking,
+      availableDrivers = drivers,
+      availableVehicles = vehicles,
+      availableCustomers = customers,
+      defaultGstPercent = defaultGstPercent,
+      onDismiss = {
+        showNewBookingDialog = false
+        editingBooking = null
+      },
       onConfirm = { name, phone, pickup, drop, cat, vehNo, driver, tStat, pStat, chan, base, exp, dist, date ->
-        viewModel.createBooking(name, phone, pickup, drop, cat, vehNo, driver, tStat, pStat, chan, base, exp, dist, date)
+        viewModel.saveBookingDetails(
+          existingBooking = editingBooking,
+          customerName = name,
+          customerPhone = phone,
+          pickupLocation = pickup,
+          dropLocation = drop,
+          vehicleCategory = cat,
+          vehicleNumber = vehNo,
+          driverName = driver,
+          tripStatus = tStat,
+          paymentStatus = pStat,
+          paymentChannel = chan,
+          baseAmount = base,
+          expenseAmount = exp,
+          distanceKm = dist,
+          tripDate = date
+        )
+        editingBooking = null
       }
     )
   }
 
   if (showAddDriverDialog) {
     AddDriverDialog(
-      onDismiss = { showAddDriverDialog = false },
-      onConfirm = { name, phone, lic, veh, cat, st ->
-        viewModel.createDriver(name, phone, lic, veh, cat, st)
+      initialDriver = editingDriver,
+      availableVehicles = vehicles,
+      onDismiss = {
+        showAddDriverDialog = false
+        editingDriver = null
+      },
+      onConfirm = { name, phone, lic, veh, cat, st, trips, earnings ->
+        viewModel.saveDriverDetails(
+          existingDriver = editingDriver,
+          name = name,
+          phone = phone,
+          licenseNumber = lic,
+          assignedVehicle = veh,
+          vehicleCategory = cat,
+          status = st,
+          tripsCompleted = trips,
+          earningsTotal = earnings
+        )
+        editingDriver = null
       }
     )
   }
 
   if (showAddVehicleDialog) {
     AddVehicleDialog(
-      onDismiss = { showAddVehicleDialog = false },
+      initialVehicle = editingVehicle,
+      onDismiss = {
+        showAddVehicleDialog = false
+        editingVehicle = null
+      },
       onConfirm = { reg, mod, cat, st, cost, nextDate, notes ->
-        viewModel.createVehicle(reg, mod, cat, st, cost, nextDate, notes)
+        viewModel.saveVehicleDetails(
+          existingVehicle = editingVehicle,
+          registrationNumber = reg,
+          modelName = mod,
+          category = cat,
+          status = st,
+          maintenanceCost = cost,
+          nextServiceDate = nextDate,
+          serviceNotes = notes
+        )
+        editingVehicle = null
       }
     )
   }
 
   if (showAddLeadDialog) {
     AddLeadDialog(
-      onDismiss = { showAddLeadDialog = false },
-      onConfirm = { name, phone, route, cat, quote, src ->
-        viewModel.createLead(name, phone, route, cat, quote, src)
+      initialLead = editingLead,
+      onDismiss = {
+        showAddLeadDialog = false
+        editingLead = null
+      },
+      onConfirm = { name, phone, route, cat, quote, src, status ->
+        viewModel.saveLeadDetails(
+          existingLead = editingLead,
+          clientName = name,
+          clientPhone = phone,
+          routeSummary = route,
+          preferredCategory = cat,
+          quotedAmount = quote,
+          source = src,
+          status = status
+        )
+        editingLead = null
       }
     )
   }
 
   if (showAddCustomerDialog) {
     AddCustomerDialog(
-      onDismiss = { showAddCustomerDialog = false },
-      onConfirm = { name, phone, email, comp, gst, billed, pending ->
-        viewModel.createCustomer(name, phone, email, comp, gst, billed, pending)
+      initialCustomer = editingCustomer,
+      onDismiss = {
+        showAddCustomerDialog = false
+        editingCustomer = null
+      },
+      onConfirm = { name, phone, email, comp, gst, totalBookings, billed, pending ->
+        viewModel.saveCustomerDetails(
+          existingCustomer = editingCustomer,
+          name = name,
+          phone = phone,
+          email = email,
+          companyName = comp,
+          gstin = gst,
+          totalBookings = totalBookings,
+          totalBilled = billed,
+          pendingBalance = pending
+        )
+        editingCustomer = null
+      }
+    )
+  }
+
+  editingExpenseBooking?.let { targetBooking ->
+    TripExpenseEntryDialog(
+      booking = targetBooking,
+      onDismiss = { editingExpenseBooking = null },
+      onConfirm = { newExpense, newDistanceKm ->
+        viewModel.updateBookingExpenses(targetBooking, newExpense, newDistanceKm)
+        editingExpenseBooking = null
       }
     )
   }
@@ -403,6 +552,17 @@ fun FleetCrmCommandCenterScreen(
       spec = spec,
       onDismiss = { inspectedKpiSpec = null },
       onOpenSection = { viewModel.selectSection(it) }
+    )
+  }
+
+  latestInvoiceBooking?.let { invoiceBooking ->
+    InvoicePdfGeneratedDialog(
+      booking = invoiceBooking,
+      agencyName = agencyName,
+      agencyGstin = agencyGstin,
+      gstPercent = defaultGstPercent,
+      onDismiss = { viewModel.dismissInvoicePdfDialog() },
+      onStatusMessage = { msg -> viewModel.showStatusMessage(msg) }
     )
   }
 }

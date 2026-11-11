@@ -26,8 +26,10 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -187,6 +189,13 @@ fun CrmModuleDispatcher(
   onLoadDemoData: () -> Unit,
   onSignOut: () -> Unit,
   onOpenApkDownloadCenter: () -> Unit = {},
+  onEditBooking: (Booking) -> Unit = {},
+  onEditLead: (Lead) -> Unit = {},
+  onEditDriver: (Driver) -> Unit = {},
+  onEditVehicle: (Vehicle) -> Unit = {},
+  onEditCustomer: (Customer) -> Unit = {},
+  onEditTripExpenses: (Booking) -> Unit = {},
+  onDownloadInvoicePdf: (Booking) -> Unit = {},
 ) {
   when (section) {
     CrmSection.LEADS -> {
@@ -245,7 +254,16 @@ fun CrmModuleDispatcher(
                     color = SidebarActiveBlue,
                     fontSize = 15.sp
                   )
-                  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                      onClick = { onEditLead(lead) },
+                      shape = RoundedCornerShape(8.dp),
+                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("Edit Details", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    }
                     if (lead.status != "Converted") {
                       Button(
                         onClick = { onConvertLead(lead) },
@@ -341,7 +359,26 @@ fun CrmModuleDispatcher(
                     fontSize = 14.sp,
                     color = TextPrimaryDark
                   )
-                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                      onClick = { onDownloadInvoicePdf(booking) },
+                      colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("Invoice PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                      onClick = { onEditBooking(booking) },
+                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("Edit Details", fontSize = 11.sp)
+                    }
                     if (booking.tripStatus != "Completed") {
                       OutlinedButton(
                         onClick = { onUpdateBookingStatus(booking, "Completed") },
@@ -422,20 +459,31 @@ fun CrmModuleDispatcher(
                     color = TextPrimaryDark
                   )
                   Spacer(modifier = Modifier.height(4.dp))
-                  Surface(
-                    color = if (b.paymentStatus == "Paid") KpiGreenBg else KpiAmberBg,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                      .clip(RoundedCornerShape(8.dp))
-                      .clickable { onToggleBookingPayment(b) }
-                  ) {
-                    Text(
-                      text = if (b.paymentStatus == "Paid") "PAID (Tap to toggle)" else "PENDING (Tap to settle)",
-                      color = if (b.paymentStatus == "Paid") KpiGreenIcon else KpiAmberIcon,
-                      fontSize = 11.sp,
-                      fontWeight = FontWeight.Bold,
-                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                      onClick = { onDownloadInvoicePdf(b) },
+                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(14.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
+                    }
+                    Surface(
+                      color = if (b.paymentStatus == "Paid") KpiGreenBg else KpiAmberBg,
+                      shape = RoundedCornerShape(8.dp),
+                      modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onToggleBookingPayment(b) }
+                    ) {
+                      Text(
+                        text = if (b.paymentStatus == "Paid") "PAID ↻" else "PENDING ↻",
+                        color = if (b.paymentStatus == "Paid") KpiGreenIcon else KpiAmberIcon,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                      )
+                    }
                   }
                 }
               }
@@ -543,8 +591,19 @@ fun CrmModuleDispatcher(
                     fontWeight = FontWeight.Bold,
                     color = KpiOrangeIcon
                   )
-                  IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = TextSecondarySlate)
+                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                      onClick = { onEditVehicle(v) },
+                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("Edit Details", fontSize = 11.sp)
+                    }
+                    IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
+                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = TextSecondarySlate)
+                    }
                   }
                 }
               }
@@ -610,8 +669,13 @@ fun CrmModuleDispatcher(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                   )
                 }
-                IconButton(onClick = { onDeleteDriver(d.id) }) {
-                  Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Driver", tint = TextSecondarySlate)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  IconButton(onClick = { onEditDriver(d) }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Driver", tint = SidebarActiveBlue)
+                  }
+                  IconButton(onClick = { onDeleteDriver(d.id) }) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Driver", tint = TextSecondarySlate)
+                  }
                 }
               }
             }
@@ -624,7 +688,7 @@ fun CrmModuleDispatcher(
       CrmModuleSectionHeader(
         title = "Trip Details and Trip Expenses",
         subtitle = "Fuel, highway tolls, state permits, driver bata, and net operating profit per trip.",
-        actionLabel = "Log Trip",
+        actionLabel = "Log New Trip",
         onActionClick = onOpenNewBooking,
         onBackToDashboard = onBackToDashboard
       )
@@ -641,12 +705,29 @@ fun CrmModuleDispatcher(
               modifier = Modifier.fillMaxWidth()
             ) {
               Column(modifier = Modifier.padding(16.dp)) {
-                Text("${b.pickupLocation} → ${b.dropLocation}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text(
-                  "Driver: ${b.driverName} • ${b.vehicleNumber} • Distance: ${b.distanceKm} km",
-                  fontSize = 12.sp,
-                  color = TextSecondarySlate
-                )
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Column(modifier = Modifier.weight(1f)) {
+                    Text("${b.pickupLocation} → ${b.dropLocation}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(
+                      "Driver: ${b.driverName} • ${b.vehicleNumber} • Distance: ${b.distanceKm} km",
+                      fontSize = 12.sp,
+                      color = TextSecondarySlate
+                    )
+                  }
+                  OutlinedButton(
+                    onClick = { onEditTripExpenses(b) },
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                  ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit Expenses", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                  }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                   modifier = Modifier.fillMaxWidth(),
@@ -738,12 +819,19 @@ fun CrmModuleDispatcher(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                   Text("Billed: ${formatInr(c.totalBilled)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                  if (c.pendingBalance > 0) {
-                    TextButton(onClick = { onSettleCustomer(c) }) {
-                      Text("Settle Due ${formatInr(c.pendingBalance)}", color = KpiAmberIcon, fontWeight = FontWeight.Bold)
+                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    TextButton(onClick = { onEditCustomer(c) }) {
+                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(3.dp))
+                      Text("Edit", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
-                  } else {
-                    Text("No Dues ✓", color = KpiGreenIcon, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    if (c.pendingBalance > 0) {
+                      TextButton(onClick = { onSettleCustomer(c) }) {
+                        Text("Settle ${formatInr(c.pendingBalance)}", color = KpiAmberIcon, fontWeight = FontWeight.Bold)
+                      }
+                    } else {
+                      Text("No Dues ✓", color = KpiGreenIcon, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                   }
                 }
               }
