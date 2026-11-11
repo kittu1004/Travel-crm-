@@ -48,7 +48,7 @@ jobs:
             yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           fi
 
-      - name: Prepare Environment, Firebase Config & Debug Keystore
+      - name: Prepare Environment, Fonts, Firebase Config & Debug Keystore
         run: |
           if [ ! -f .env ]; then
             if [ -f .env.example ]; then
@@ -56,6 +56,32 @@ jobs:
             else
               touch .env
             fi
+          fi
+
+          mkdir -p app/src/main/res/values
+          if [ ! -f app/src/main/res/values/firebase_applet_config.xml ]; then
+            cat << 'EOF' > app/src/main/res/values/firebase_applet_config.xml
+          <?xml version="1.0" encoding="utf-8" standalone="no"?>
+          <resources>
+              <string name="firestore_database_id" translatable="false">ai-studio-android-fleetcrm-61d992d8-92f0-4625-8171-eaeac1d244ea</string>
+          </resources>
+          EOF
+            echo "Created app/src/main/res/values/firebase_applet_config.xml"
+          fi
+
+          mkdir -p app/src/main/res/font
+          if [ ! -f app/src/main/res/font/plus_jakarta_sans.ttf ]; then
+            curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf" \
+              -o app/src/main/res/font/plus_jakarta_sans.ttf \
+              || cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf app/src/main/res/font/plus_jakarta_sans.ttf
+            echo "Provisioned app/src/main/res/font/plus_jakarta_sans.ttf"
+          fi
+
+          if [ ! -f app/src/main/res/font/jetbrains_mono.ttf ]; then
+            curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf" \
+              -o app/src/main/res/font/jetbrains_mono.ttf \
+              || cp /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf app/src/main/res/font/jetbrains_mono.ttf
+            echo "Provisioned app/src/main/res/font/jetbrains_mono.ttf"
           fi
 
           if [ ! -f app/google-services.json ]; then
