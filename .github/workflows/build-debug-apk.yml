@@ -7,6 +7,12 @@ on:
       - master
     tags:
       - 'v*'
+      - 'V*'
+  release:
+    types:
+      - published
+      - created
+      - edited
   pull_request:
     branches:
       - main
@@ -31,15 +37,18 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
 
-      - name: Prepare Environment & Debug Keystore
+      - name: Accept Android SDK Licenses
+        run: |
+          if [ -n "$ANDROID_HOME" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+
+      - name: Prepare Environment, Firebase Config & Debug Keystore
         run: |
           if [ ! -f .env ]; then
             if [ -f .env.example ]; then
@@ -49,31 +58,72 @@ jobs:
             fi
           fi
 
+          if [ ! -f app/google-services.json ]; then
+            cat << 'EOF' > app/google-services.json
+          {
+            "project_info": {
+              "project_number": "516884045684",
+              "project_id": "gen-lang-client-0224613684",
+              "storage_bucket": "gen-lang-client-0224613684.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:516884045684:android:e82c86f29629e76e78d621",
+                  "android_client_info": {
+                    "package_name": "com.aistudio.travelcrm.vxqplm"
+                  }
+                },
+                "oauth_client": [
+                  {
+                    "client_id": "516884045684-47l5mnlo2b8r8j69a6abescn185l1797.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                      "package_name": "com.aistudio.travelcrm.vxqplm",
+                      "certificate_hash": "ed63d84629f83c5710636ee304753236d9ca5ec4"
+                    }
+                  },
+                  {
+                    "client_id": "516884045684-92nuek0n4f1eq0mrhdnrghia6nicse5e.apps.googleusercontent.com",
+                    "client_type": 3
+                  }
+                ],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyAKmAMsehZlQd2a5PYwqX5dQ5vlRuyrSxA"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": [
+                      {
+                        "client_id": "516884045684-92nuek0n4f1eq0mrhdnrghia6nicse5e.apps.googleusercontent.com",
+                        "client_type": 3
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+            echo "Provisioned app/google-services.json for CI build"
+          fi
+
           if [ ! -f debug.keystore ]; then
             if [ -f debug.keystore.base64 ]; then
               base64 -d debug.keystore.base64 > debug.keystore
               echo "Restored debug.keystore from debug.keystore.base64"
             else
-              keytool -genkeypair -v \
-                -keystore debug.keystore \
-                -alias androiddebugkey \
-                -keyalg RSA \
-                -keysize 2048 \
-                -validity 10000 \
-                -storepass android \
-                -keypass android \
-                -dname "CN=Android Debug,O=Android,C=US"
-              echo "Generated fallback debug.keystore"
+              echo "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" | base64 -d > debug.keystore
+              echo "Restored provisioned debug.keystore"
             fi
           fi
 
       - name: Build Debug APK
         run: |
-          if [ -x ./gradlew ]; then
-            ./gradlew :app:assembleDebug --stacktrace
-          else
-            gradle :app:assembleDebug --stacktrace
-          fi
+          gradle :app:assembleDebug --stacktrace
           cp app/build/outputs/apk/debug/app-debug.apk FleetCRM-debug.apk
 
       - name: Upload Debug APK Artifact
@@ -87,14 +137,14 @@ jobs:
           retention-days: 30
 
       - name: Publish Direct-Download APK to GitHub Releases
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
+          tag_name: ${{ (github.event_name == 'release' && github.event.release.tag_name) || (github.ref_type == 'tag' && github.ref_name) || format('v1.0.{0}', github.run_number) }}
           name: "FleetCRM Debug APK (Build #${{ github.run_number }})"
           body: |
             ### FleetCRM — Travel CRM & Admin Operations Command Center (Debug APK)
-            - **Repository:** `kittu1004/Travel-crm`
+            - **Repository:** `${{ github.repository }}`
             - **Package ID:** `com.aistudio.travelcrm.vxqplm`
             - **Commit:** `${{ github.sha }}`
             - **Direct 1-Click APK Download:** [Download FleetCRM-debug.apk](https://github.com/${{ github.repository }}/releases/latest/download/FleetCRM-debug.apk)

@@ -801,11 +801,11 @@ fun CrmModuleDispatcher(
 
     CrmSection.REPORTS_EXPORT -> {
       val context = LocalContext.current
-      val directApkUrl = "https://github.com/kittu1004/Travel-crm/releases/latest/download/FleetCRM-debug.apk"
-      val releasesUrl = "https://github.com/kittu1004/Travel-crm/releases"
+      val directApkUrl = "https://github.com/kittu1004/Travel-crm-/releases/latest/download/FleetCRM-debug.apk"
+      val releasesUrl = "https://github.com/kittu1004/Travel-crm-/releases"
       CrmModuleSectionHeader(
         title = "Reports, CSV Export & GitHub APK Release",
-        subtitle = "Generate audit-ready CSV reports or download the latest Debug APK from kittu1004/Travel-crm.",
+        subtitle = "Generate audit-ready CSV reports or download the latest Debug APK from kittu1004/Travel-crm-.",
         onBackToDashboard = onBackToDashboard
       )
       Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -856,7 +856,7 @@ fun CrmModuleDispatcher(
         ) {
           Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-              "GitHub Actions Direct APK Download (kittu1004/Travel-crm)",
+              "GitHub Actions Direct APK Download (kittu1004/Travel-crm-)",
               fontWeight = FontWeight.Bold,
               fontSize = 16.sp,
               color = TextPrimaryDark

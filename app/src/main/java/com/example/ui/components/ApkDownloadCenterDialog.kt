@@ -72,10 +72,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-const val GITHUB_REPO_SLUG = "kittu1004/Travel-crm"
-const val GITHUB_DIRECT_APK_URL = "https://github.com/kittu1004/Travel-crm/releases/latest/download/FleetCRM-debug.apk"
-const val GITHUB_RELEASES_PAGE_URL = "https://github.com/kittu1004/Travel-crm/releases"
-const val GITHUB_ACTIONS_PAGE_URL = "https://github.com/kittu1004/Travel-crm/actions"
+const val GITHUB_REPO_SLUG = "kittu1004/Travel-crm-"
+const val GITHUB_DIRECT_APK_URL = "https://github.com/kittu1004/Travel-crm-/releases/latest/download/FleetCRM-debug.apk"
+const val GITHUB_RELEASES_PAGE_URL = "https://github.com/kittu1004/Travel-crm-/releases"
+const val GITHUB_ACTIONS_PAGE_URL = "https://github.com/kittu1004/Travel-crm-/actions"
 
 suspend fun copyInstalledApkToUri(context: Context, destUri: Uri): Result<Long> = withContext(Dispatchers.IO) {
   runCatching {
@@ -124,8 +124,9 @@ private suspend fun checkGitHubReleaseAvailable(): Boolean = withContext(Dispatc
       setRequestProperty("Accept", "application/vnd.github+json")
     }
     val code = conn.responseCode
+    val body = if (code == 200) conn.inputStream.bufferedReader().use { it.readText() } else ""
     conn.disconnect()
-    code == 200
+    code == 200 && body.contains("FleetCRM-debug.apk")
   } catch (e: Exception) {
     false
   }
