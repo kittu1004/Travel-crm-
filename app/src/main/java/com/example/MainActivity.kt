@@ -170,6 +170,7 @@ fun FleetCrmCommandCenterScreen(
   var showAddLeadDialog by remember { mutableStateOf(false) }
   var showAddCustomerDialog by remember { mutableStateOf(false) }
   var showWebsitePreviewDialog by remember { mutableStateOf(false) }
+  var showApkDownloadDialog by remember { mutableStateOf(false) }
   var inspectedKpiSpec by remember { mutableStateOf<KpiCardSpec?>(null) }
 
   val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -236,7 +237,8 @@ fun FleetCrmCommandCenterScreen(
             onToggleSplitSidebar = { isSplitSidebarVisibleOnCompact = !isSplitSidebarVisibleOnCompact },
             onLoadDemoData = { viewModel.loadLiveDemoData() },
             onNewBooking = { showNewBookingDialog = true },
-            onViewWebsite = { showWebsitePreviewDialog = true }
+            onViewWebsite = { showWebsitePreviewDialog = true },
+            onDownloadApk = { showApkDownloadDialog = true }
           )
 
           AnimatedVisibility(visible = statusBanner != null) {
@@ -320,7 +322,8 @@ fun FleetCrmCommandCenterScreen(
               onLoadDemoData = { viewModel.loadLiveDemoData() },
               onSignOut = {
                 signOut(credentialManager = credentialManager, scope = scope)
-              }
+              },
+              onOpenApkDownloadCenter = { showApkDownloadDialog = true }
             )
           }
 
@@ -328,6 +331,15 @@ fun FleetCrmCommandCenterScreen(
         }
       }
     }
+  }
+
+  if (showApkDownloadDialog) {
+    com.example.ui.components.ApkDownloadCenterDialog(
+      onDismiss = { showApkDownloadDialog = false },
+      onStatusMessage = {
+        viewModel.refreshRevenueMetrics()
+      }
+    )
   }
 
   if (showNewBookingDialog) {

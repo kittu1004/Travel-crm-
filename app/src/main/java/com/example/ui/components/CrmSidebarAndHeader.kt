@@ -198,6 +198,7 @@ fun CommandCenterHeader(
   onLoadDemoData: () -> Unit,
   onNewBooking: () -> Unit,
   onViewWebsite: () -> Unit,
+  onDownloadApk: () -> Unit = {},
 ) {
   Column(
     modifier = Modifier
@@ -350,6 +351,31 @@ fun CommandCenterHeader(
           text = "View Website",
           fontSize = 13.sp,
           fontWeight = FontWeight.SemiBold
+        )
+      }
+
+      OutlinedButton(
+        onClick = onDownloadApk,
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.4f)),
+        colors = ButtonDefaults.outlinedButtonColors(
+          containerColor = Color.White,
+          contentColor = SidebarActiveBlue
+        ),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+        modifier = Modifier.testTag("header_download_apk_button")
+      ) {
+        Icon(
+          imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+          contentDescription = null,
+          modifier = Modifier.size(15.dp),
+          tint = SidebarActiveBlue
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+          text = "Download APK",
+          fontSize = 13.sp,
+          fontWeight = FontWeight.Bold
         )
       }
     }

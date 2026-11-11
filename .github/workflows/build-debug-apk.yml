@@ -41,7 +41,6 @@ jobs:
 
       - name: Prepare Environment & Debug Keystore
         run: |
-          # Ensure .env exists for the Secrets Gradle Plugin
           if [ ! -f .env ]; then
             if [ -f .env.example ]; then
               cp .env.example .env
@@ -50,7 +49,6 @@ jobs:
             fi
           fi
 
-          # Restore debug.keystore from debug.keystore.base64 so APK signature matches Firebase SHA-1/SHA-256
           if [ ! -f debug.keystore ]; then
             if [ -f debug.keystore.base64 ]; then
               base64 -d debug.keystore.base64 > debug.keystore
@@ -96,14 +94,22 @@ jobs:
           name: "FleetCRM Debug APK (Build #${{ github.run_number }})"
           body: |
             ### FleetCRM — Travel CRM & Admin Operations Command Center (Debug APK)
+            - **Repository:** `kittu1004/Travel-crm`
             - **Package ID:** `com.aistudio.travelcrm.vxqplm`
             - **Commit:** `${{ github.sha }}`
-            - **Direct APK Download:** Download **`FleetCRM-debug.apk`** below under **Assets** to install directly on your Android device.
+            - **Direct 1-Click APK Download:** [Download FleetCRM-debug.apk](https://github.com/${{ github.repository }}/releases/latest/download/FleetCRM-debug.apk)
           files: |
             FleetCRM-debug.apk
             app/build/outputs/apk/debug/app-debug.apk
           draft: false
           prerelease: false
+          make_latest: true
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write Direct Download Links to Job Summary
+        run: |
+          echo "## 🚀 FleetCRM Debug APK Ready" >> $GITHUB_STEP_SUMMARY
+          echo "- **Direct APK Download (Latest Release):** [https://github.com/${{ github.repository }}/releases/latest/download/FleetCRM-debug.apk](https://github.com/${{ github.repository }}/releases/latest/download/FleetCRM-debug.apk)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Releases Page:** [https://github.com/${{ github.repository }}/releases](https://github.com/${{ github.repository }}/releases)" >> $GITHUB_STEP_SUMMARY

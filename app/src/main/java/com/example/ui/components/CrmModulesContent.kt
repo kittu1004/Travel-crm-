@@ -186,6 +186,7 @@ fun CrmModuleDispatcher(
   onSaveSettings: (String, String, Int) -> Unit,
   onLoadDemoData: () -> Unit,
   onSignOut: () -> Unit,
+  onOpenApkDownloadCenter: () -> Unit = {},
 ) {
   when (section) {
     CrmSection.LEADS -> {
@@ -800,46 +801,95 @@ fun CrmModuleDispatcher(
 
     CrmSection.REPORTS_EXPORT -> {
       val context = LocalContext.current
+      val directApkUrl = "https://github.com/kittu1004/Travel-crm/releases/latest/download/FleetCRM-debug.apk"
+      val releasesUrl = "https://github.com/kittu1004/Travel-crm/releases"
       CrmModuleSectionHeader(
-        title = "Reports & CSV Data Export",
-        subtitle = "Generate and share audit-ready summaries of bookings, revenue, and GST returns.",
+        title = "Reports, CSV Export & GitHub APK Release",
+        subtitle = "Generate audit-ready CSV reports or download the latest Debug APK from kittu1004/Travel-crm.",
         onBackToDashboard = onBackToDashboard
       )
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
-        border = BorderStroke(1.dp, CardBorder),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text("Executive Fleet & Revenue Statement", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-          Text(
-            "Total Bookings: ${bookings.size} | Drivers: ${drivers.size} | Fleet Vehicles: ${vehicles.size} | Corporate Clients: ${customers.size}",
-            fontSize = 13.sp,
-            color = TextSecondarySlate
-          )
-          Button(
-            onClick = {
-              val csvBuilder = StringBuilder()
-              csvBuilder.append("Customer,Category,Vehicle,Driver,Status,Payment,BaseINR,GSTINR,TotalINR\n")
-              bookings.forEach { b ->
-                csvBuilder.append(
-                  "${b.customerName},${b.vehicleCategory},${b.vehicleNumber},${b.driverName},${b.tripStatus},${b.paymentStatus},${b.baseAmount},${b.gstAmount},${b.totalAmount}\n"
-                )
+      Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = CardSurface),
+          border = BorderStroke(1.dp, CardBorder),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Executive Fleet & Revenue Statement", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(
+              "Total Bookings: ${bookings.size} | Drivers: ${drivers.size} | Fleet Vehicles: ${vehicles.size} | Corporate Clients: ${customers.size}",
+              fontSize = 13.sp,
+              color = TextSecondarySlate
+            )
+            Button(
+              onClick = {
+                val csvBuilder = StringBuilder()
+                csvBuilder.append("Customer,Category,Vehicle,Driver,Status,Payment,BaseINR,GSTINR,TotalINR\n")
+                bookings.forEach { b ->
+                  csvBuilder.append(
+                    "${b.customerName},${b.vehicleCategory},${b.vehicleNumber},${b.driverName},${b.tripStatus},${b.paymentStatus},${b.baseAmount},${b.gstAmount},${b.totalAmount}\n"
+                  )
+                }
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                  type = "text/plain"
+                  putExtra(Intent.EXTRA_SUBJECT, "FleetCRM Revenue & GST Export")
+                  putExtra(Intent.EXTRA_TEXT, csvBuilder.toString())
+                }
+                context.startActivity(Intent.createChooser(sendIntent, "Export FleetCRM CSV Report"))
+              },
+              colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
+              shape = RoundedCornerShape(10.dp)
+            ) {
+              Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("Export & Share CSV Ledger", fontWeight = FontWeight.Bold)
+            }
+          }
+        }
+
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = CardSurface),
+          border = BorderStroke(1.dp, CardBorder),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+              "GitHub Actions Direct APK Download (kittu1004/Travel-crm)",
+              fontWeight = FontWeight.Bold,
+              fontSize = 16.sp,
+              color = TextPrimaryDark
+            )
+            Text(
+              "Direct Release Asset URL: $directApkUrl",
+              fontSize = 12.sp,
+              color = SidebarActiveBlue
+            )
+            FlowRow(
+              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Button(
+                onClick = onOpenApkDownloadCenter,
+                colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.testTag("download_github_apk_button")
+              ) {
+                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Save / Download FleetCRM-debug.apk", fontWeight = FontWeight.Bold)
               }
-              val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, "FleetCRM Revenue & GST Export")
-                putExtra(Intent.EXTRA_TEXT, csvBuilder.toString())
+              OutlinedButton(
+                onClick = {
+                  val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(releasesUrl))
+                  context.startActivity(intent)
+                },
+                shape = RoundedCornerShape(10.dp)
+              ) {
+                Text("Open GitHub Releases", fontWeight = FontWeight.SemiBold)
               }
-              context.startActivity(Intent.createChooser(sendIntent, "Export FleetCRM CSV Report"))
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
-            shape = RoundedCornerShape(10.dp)
-          ) {
-            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Export & Share CSV Ledger", fontWeight = FontWeight.Bold)
+            }
           }
         }
       }
