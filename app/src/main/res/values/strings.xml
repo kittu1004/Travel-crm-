@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">FleetCRM</string>
+    <string name="cmd_center_title">Admin Operations Command Center</string>
+    <string name="cmd_center_subtitle">Real-time fleet performance, revenue metrics, and booking control.</string>
+    <string name="load_live_demo_data">Load Live Demo Data</string>
+    <string name="new_booking">+ New Booking</string>
+    <string name="view_website">View Website</string>
+    <string name="view_details">View Details</string>
+    <string name="revenue_section_title">Revenue Details &amp; Cashflow Performance</string>
+    <string name="revenue_section_subtitle">Real-time breakdown of gross billed revenue, realized payments, outstanding receivables, payment channels, and recent transaction inflows.</string>
+    <string name="live_realized_inflows">LIVE REALIZED INFLOWS</string>
+    <string name="refresh_revenue">Refresh Revenue</string>
+    <string name="select_category_prompt">SELECT CATEGORY TO VIEW DETAILS:</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+</resources>

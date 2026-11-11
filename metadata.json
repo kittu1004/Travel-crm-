@@ -1,0 +1,6 @@
+{
+  "name": "FleetCRM",
+  "description": "Travel CRM and Admin Operations Command Center for real-time fleet performance, bookings, revenue metrics, GST billing, and driver management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

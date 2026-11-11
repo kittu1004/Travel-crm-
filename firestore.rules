@@ -1,0 +1,256 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net - Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidVehicleCategory(cat) {
+      return cat is string && cat in ['Sedans', 'Compact SUVs', 'SUVs', 'Tourist Travellers'];
+    }
+
+    function isValidTimestampsOnCreate(data) {
+      return data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTimestampsOnUpdate(data, oldData) {
+      return data.createdAt == oldData.createdAt &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 1. Booking Validation Blueprint
+    function isValidBooking(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'customerName', 'customerPhone', 'pickupLocation', 'dropLocation',
+               'vehicleCategory', 'vehicleNumber', 'driverName', 'tripStatus', 'paymentStatus',
+               'paymentChannel', 'baseAmount', 'gstAmount', 'totalAmount', 'expenseAmount',
+               'distanceKm', 'tripDate', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'customerName', 'customerPhone', 'pickupLocation', 'dropLocation',
+               'vehicleCategory', 'vehicleNumber', 'driverName', 'tripStatus', 'paymentStatus',
+               'paymentChannel', 'baseAmount', 'gstAmount', 'totalAmount', 'expenseAmount',
+               'distanceKm', 'tripDate', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100 &&
+             data.customerPhone is string && data.customerPhone.size() >= 1 && data.customerPhone.size() <= 30 &&
+             data.pickupLocation is string && data.pickupLocation.size() >= 1 && data.pickupLocation.size() <= 150 &&
+             data.dropLocation is string && data.dropLocation.size() >= 1 && data.dropLocation.size() <= 150 &&
+             isValidVehicleCategory(data.vehicleCategory) &&
+             data.vehicleNumber is string && data.vehicleNumber.size() >= 1 && data.vehicleNumber.size() <= 30 &&
+             data.driverName is string && data.driverName.size() >= 1 && data.driverName.size() <= 100 &&
+             data.tripStatus is string && data.tripStatus in ['Active', 'Completed', 'Cancelled'] &&
+             data.paymentStatus is string && data.paymentStatus in ['Paid', 'Pending'] &&
+             data.paymentChannel is string && data.paymentChannel.size() >= 1 && data.paymentChannel.size() <= 50 &&
+             data.baseAmount is int && data.baseAmount >= 0 && data.baseAmount <= 100000000 &&
+             data.gstAmount is int && data.gstAmount >= 0 && data.gstAmount <= 100000000 &&
+             data.totalAmount is int && data.totalAmount >= 0 && data.totalAmount <= 200000000 &&
+             data.expenseAmount is int && data.expenseAmount >= 0 && data.expenseAmount <= 100000000 &&
+             data.distanceKm is int && data.distanceKm >= 0 && data.distanceKm <= 1000000 &&
+             data.tripDate is string && data.tripDate.size() >= 1 && data.tripDate.size() <= 40;
+    }
+
+    // 2. Driver Validation Blueprint
+    function isValidDriver(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'name', 'phone', 'licenseNumber', 'assignedVehicle',
+               'vehicleCategory', 'status', 'tripsCompleted', 'earningsTotal',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'name', 'phone', 'licenseNumber', 'assignedVehicle',
+               'vehicleCategory', 'status', 'tripsCompleted', 'earningsTotal',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30 &&
+             data.licenseNumber is string && data.licenseNumber.size() >= 1 && data.licenseNumber.size() <= 40 &&
+             data.assignedVehicle is string && data.assignedVehicle.size() >= 1 && data.assignedVehicle.size() <= 50 &&
+             isValidVehicleCategory(data.vehicleCategory) &&
+             data.status is string && data.status in ['Available', 'On Trip', 'Off Duty'] &&
+             data.tripsCompleted is int && data.tripsCompleted >= 0 && data.tripsCompleted <= 1000000 &&
+             data.earningsTotal is int && data.earningsTotal >= 0 && data.earningsTotal <= 100000000;
+    }
+
+    // 3. Vehicle Validation Blueprint
+    function isValidVehicle(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'registrationNumber', 'modelName', 'category',
+               'status', 'maintenanceCost', 'nextServiceDate', 'serviceNotes',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'registrationNumber', 'modelName', 'category',
+               'status', 'maintenanceCost', 'nextServiceDate', 'serviceNotes',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             data.registrationNumber is string && data.registrationNumber.size() >= 1 && data.registrationNumber.size() <= 30 &&
+             data.modelName is string && data.modelName.size() >= 1 && data.modelName.size() <= 100 &&
+             isValidVehicleCategory(data.category) &&
+             data.status is string && data.status in ['Available', 'On Trip', 'Maintenance'] &&
+             data.maintenanceCost is int && data.maintenanceCost >= 0 && data.maintenanceCost <= 100000000 &&
+             data.nextServiceDate is string && data.nextServiceDate.size() >= 1 && data.nextServiceDate.size() <= 40 &&
+             data.serviceNotes is string && data.serviceNotes.size() >= 1 && data.serviceNotes.size() <= 200;
+    }
+
+    // 4. Lead Validation Blueprint
+    function isValidLead(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'clientName', 'clientPhone', 'routeSummary',
+               'preferredCategory', 'quotedAmount', 'status', 'source',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'clientName', 'clientPhone', 'routeSummary',
+               'preferredCategory', 'quotedAmount', 'status', 'source',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             data.clientName is string && data.clientName.size() >= 1 && data.clientName.size() <= 100 &&
+             data.clientPhone is string && data.clientPhone.size() >= 1 && data.clientPhone.size() <= 30 &&
+             data.routeSummary is string && data.routeSummary.size() >= 1 && data.routeSummary.size() <= 150 &&
+             isValidVehicleCategory(data.preferredCategory) &&
+             data.quotedAmount is int && data.quotedAmount >= 0 && data.quotedAmount <= 100000000 &&
+             data.status is string && data.status in ['New', 'Quoted', 'Converted', 'Lost'] &&
+             data.source is string && data.source.size() >= 1 && data.source.size() <= 50;
+    }
+
+    // 5. Customer Validation Blueprint
+    function isValidCustomer(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'name', 'phone', 'email', 'companyName',
+               'gstin', 'totalBookings', 'totalBilled', 'pendingBalance',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'name', 'phone', 'email', 'companyName',
+               'gstin', 'totalBookings', 'totalBilled', 'pendingBalance',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30 &&
+             data.email is string && data.email.size() >= 1 && data.email.size() <= 100 &&
+             data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 100 &&
+             data.gstin is string && data.gstin.size() >= 1 && data.gstin.size() <= 30 &&
+             data.totalBookings is int && data.totalBookings >= 0 && data.totalBookings <= 1000000 &&
+             data.totalBilled is int && data.totalBilled >= 0 && data.totalBilled <= 200000000 &&
+             data.pendingBalance is int && data.pendingBalance >= 0 && data.pendingBalance <= 200000000;
+    }
+
+    match /users/{userId} {
+      match /bookings/{bookingId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(bookingId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(bookingId) &&
+                         isValidBooking(incoming(), userId) &&
+                         isValidTimestampsOnCreate(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(bookingId) &&
+                         isValidBooking(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'customerName', 'customerPhone', 'pickupLocation', 'dropLocation',
+                           'vehicleCategory', 'vehicleNumber', 'driverName', 'tripStatus',
+                           'paymentStatus', 'paymentChannel', 'baseAmount', 'gstAmount',
+                           'totalAmount', 'expenseAmount', 'distanceKm', 'tripDate', 'updatedAt'
+                         ]);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(bookingId);
+      }
+
+      match /drivers/{driverId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(driverId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(driverId) &&
+                         isValidDriver(incoming(), userId) &&
+                         isValidTimestampsOnCreate(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(driverId) &&
+                         isValidDriver(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'phone', 'licenseNumber', 'assignedVehicle',
+                           'vehicleCategory', 'status', 'tripsCompleted', 'earningsTotal', 'updatedAt'
+                         ]);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(driverId);
+      }
+
+      match /vehicles/{vehicleId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId) &&
+                         isValidVehicle(incoming(), userId) &&
+                         isValidTimestampsOnCreate(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId) &&
+                         isValidVehicle(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'registrationNumber', 'modelName', 'category', 'status',
+                           'maintenanceCost', 'nextServiceDate', 'serviceNotes', 'updatedAt'
+                         ]);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
+      }
+
+      match /leads/{leadId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(leadId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(leadId) &&
+                         isValidLead(incoming(), userId) &&
+                         isValidTimestampsOnCreate(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(leadId) &&
+                         isValidLead(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'clientName', 'clientPhone', 'routeSummary', 'preferredCategory',
+                           'quotedAmount', 'status', 'source', 'updatedAt'
+                         ]);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(leadId);
+      }
+
+      match /customers/{customerId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(customerId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(customerId) &&
+                         isValidCustomer(incoming(), userId) &&
+                         isValidTimestampsOnCreate(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(customerId) &&
+                         isValidCustomer(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         isValidTimestampsOnUpdate(incoming(), existing()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'phone', 'email', 'companyName', 'gstin',
+                           'totalBookings', 'totalBilled', 'pendingBalance', 'updatedAt'
+                         ]);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(customerId);
+      }
+    }
+  }
+}

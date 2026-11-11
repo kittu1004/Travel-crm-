@@ -1,0 +1,229 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "A travel booking record with trip status, vehicle category, GST billing, and expense tracking.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "customerName": { "type": "string", "description": "Customer full name" },
+        "customerPhone": { "type": "string", "description": "Customer phone number" },
+        "pickupLocation": { "type": "string", "description": "Trip pickup city or address" },
+        "dropLocation": { "type": "string", "description": "Trip drop city or address" },
+        "vehicleCategory": {
+          "type": "string",
+          "enum": ["Sedans", "Compact SUVs", "SUVs", "Tourist Travellers"],
+          "description": "Fleet vehicle category"
+        },
+        "vehicleNumber": { "type": "string", "description": "Assigned vehicle registration number" },
+        "driverName": { "type": "string", "description": "Assigned driver name" },
+        "tripStatus": {
+          "type": "string",
+          "enum": ["Active", "Completed", "Cancelled"],
+          "description": "Current lifecycle status of the trip"
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["Paid", "Pending"],
+          "description": "Whether customer invoice payment is realized or pending"
+        },
+        "paymentChannel": { "type": "string", "description": "Payment mode such as UPI, Bank Transfer, Cash, Corporate Credit" },
+        "baseAmount": { "type": "integer", "description": "Base fare before GST in INR" },
+        "gstAmount": { "type": "integer", "description": "GST tax amount in INR" },
+        "totalAmount": { "type": "integer", "description": "Gross billed total amount in INR" },
+        "expenseAmount": { "type": "integer", "description": "Trip expenses (fuel, toll, driver allowance) in INR" },
+        "distanceKm": { "type": "integer", "description": "Total trip distance in kilometers" },
+        "tripDate": { "type": "string", "description": "Scheduled date of the trip (YYYY-MM-DD)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation (FieldValue.serverTimestamp())" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update (FieldValue.serverTimestamp())" }
+      },
+      "required": [
+        "userId",
+        "customerName",
+        "customerPhone",
+        "pickupLocation",
+        "dropLocation",
+        "vehicleCategory",
+        "vehicleNumber",
+        "driverName",
+        "tripStatus",
+        "paymentStatus",
+        "paymentChannel",
+        "baseAmount",
+        "gstAmount",
+        "totalAmount",
+        "expenseAmount",
+        "distanceKm",
+        "tripDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Driver": {
+      "title": "Driver",
+      "description": "A fleet driver in the Driver Roster.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "name": { "type": "string", "description": "Driver full name" },
+        "phone": { "type": "string", "description": "Driver contact number" },
+        "licenseNumber": { "type": "string", "description": "Commercial driving license number" },
+        "assignedVehicle": { "type": "string", "description": "Assigned vehicle model and plate" },
+        "vehicleCategory": {
+          "type": "string",
+          "enum": ["Sedans", "Compact SUVs", "SUVs", "Tourist Travellers"],
+          "description": "Vehicle category operated by driver"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Available", "On Trip", "Off Duty"],
+          "description": "Current roster duty status"
+        },
+        "tripsCompleted": { "type": "integer", "description": "Total completed trips count" },
+        "earningsTotal": { "type": "integer", "description": "Total driver allowance and earnings in INR" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": [
+        "userId",
+        "name",
+        "phone",
+        "licenseNumber",
+        "assignedVehicle",
+        "vehicleCategory",
+        "status",
+        "tripsCompleted",
+        "earningsTotal",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A fleet vehicle and its maintenance tracking record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "registrationNumber": { "type": "string", "description": "Vehicle license plate number" },
+        "modelName": { "type": "string", "description": "Vehicle make and model" },
+        "category": {
+          "type": "string",
+          "enum": ["Sedans", "Compact SUVs", "SUVs", "Tourist Travellers"],
+          "description": "Fleet vehicle category"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Available", "On Trip", "Maintenance"],
+          "description": "Current operational status"
+        },
+        "maintenanceCost": { "type": "integer", "description": "Cumulative maintenance cost in INR" },
+        "nextServiceDate": { "type": "string", "description": "Next scheduled maintenance date" },
+        "serviceNotes": { "type": "string", "description": "Maintenance and inspection notes" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": [
+        "userId",
+        "registrationNumber",
+        "modelName",
+        "category",
+        "status",
+        "maintenanceCost",
+        "nextServiceDate",
+        "serviceNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A prospective travel inquiry in the CRM pipeline.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "clientName": { "type": "string", "description": "Prospective client name" },
+        "clientPhone": { "type": "string", "description": "Prospective client phone" },
+        "routeSummary": { "type": "string", "description": "Requested travel route and dates" },
+        "preferredCategory": {
+          "type": "string",
+          "enum": ["Sedans", "Compact SUVs", "SUVs", "Tourist Travellers"],
+          "description": "Preferred vehicle category"
+        },
+        "quotedAmount": { "type": "integer", "description": "Quoted package price in INR" },
+        "status": {
+          "type": "string",
+          "enum": ["New", "Quoted", "Converted", "Lost"],
+          "description": "Lead pipeline status"
+        },
+        "source": { "type": "string", "description": "Lead acquisition channel (Website, Phone, Corporate, Referral)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": [
+        "userId",
+        "clientName",
+        "clientPhone",
+        "routeSummary",
+        "preferredCategory",
+        "quotedAmount",
+        "status",
+        "source",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A corporate or individual customer account in the Travel CRM.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "name": { "type": "string", "description": "Customer contact name" },
+        "phone": { "type": "string", "description": "Customer phone number" },
+        "email": { "type": "string", "description": "Customer email address" },
+        "companyName": { "type": "string", "description": "Company or account name" },
+        "gstin": { "type": "string", "description": "Customer GST Identification Number" },
+        "totalBookings": { "type": "integer", "description": "Total bookings placed" },
+        "totalBilled": { "type": "integer", "description": "Total billed revenue in INR" },
+        "pendingBalance": { "type": "integer", "description": "Outstanding receivable balance in INR" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update" }
+      },
+      "required": [
+        "userId",
+        "name",
+        "phone",
+        "email",
+        "companyName",
+        "gstin",
+        "totalBookings",
+        "totalBilled",
+        "pendingBalance",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "User-scoped travel bookings, trip expenses, and GST invoices"
+    },
+    "/users/{userId}/drivers/{driverId}": {
+      "schema": { "$ref": "#/entities/Driver" },
+      "description": "User-scoped driver roster records"
+    },
+    "/users/{userId}/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "User-scoped fleet vehicles and maintenance records"
+    },
+    "/users/{userId}/leads/{leadId}": {
+      "schema": { "$ref": "#/entities/Lead" },
+      "description": "User-scoped sales leads and travel inquiries"
+    },
+    "/users/{userId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "User-scoped customer and corporate accounts"
+    }
+  }
+}

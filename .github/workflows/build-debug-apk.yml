@@ -1,0 +1,109 @@
+name: Build & Release Debug APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-debug-apk:
+    name: Assemble FleetCRM Debug APK & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Prepare Environment & Debug Keystore
+        run: |
+          # Ensure .env exists for the Secrets Gradle Plugin
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+          # Restore debug.keystore from debug.keystore.base64 so APK signature matches Firebase SHA-1/SHA-256
+          if [ ! -f debug.keystore ]; then
+            if [ -f debug.keystore.base64 ]; then
+              base64 -d debug.keystore.base64 > debug.keystore
+              echo "Restored debug.keystore from debug.keystore.base64"
+            else
+              keytool -genkeypair -v \
+                -keystore debug.keystore \
+                -alias androiddebugkey \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -storepass android \
+                -keypass android \
+                -dname "CN=Android Debug,O=Android,C=US"
+              echo "Generated fallback debug.keystore"
+            fi
+          fi
+
+      - name: Build Debug APK
+        run: |
+          if [ -x ./gradlew ]; then
+            ./gradlew :app:assembleDebug --stacktrace
+          else
+            gradle :app:assembleDebug --stacktrace
+          fi
+          cp app/build/outputs/apk/debug/app-debug.apk FleetCRM-debug.apk
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FleetCRM-debug-apk
+          path: |
+            FleetCRM-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish Direct-Download APK to GitHub Releases
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "FleetCRM Debug APK (Build #${{ github.run_number }})"
+          body: |
+            ### FleetCRM — Travel CRM & Admin Operations Command Center (Debug APK)
+            - **Package ID:** `com.aistudio.travelcrm.vxqplm`
+            - **Commit:** `${{ github.sha }}`
+            - **Direct APK Download:** Download **`FleetCRM-debug.apk`** below under **Assets** to install directly on your Android device.
+          files: |
+            FleetCRM-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
