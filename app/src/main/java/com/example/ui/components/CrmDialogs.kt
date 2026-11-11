@@ -388,7 +388,7 @@ fun NewBookingDialog(
   availableDrivers: List<Driver> = emptyList(),
   availableVehicles: List<Vehicle> = emptyList(),
   availableCustomers: List<Customer> = emptyList(),
-  defaultGstPercent: Int = 5,
+  defaultGstPercent: Int = 0,
   onDismiss: () -> Unit,
   onConfirm: (
     customerName: String,
@@ -402,6 +402,9 @@ fun NewBookingDialog(
     paymentStatus: String,
     paymentChannel: String,
     baseAmount: Long,
+    tollCharges: Long,
+    parkingCharges: Long,
+    gstAmount: Long,
     expenseAmount: Long,
     distanceKm: Long,
     tripDate: String,
@@ -421,6 +424,25 @@ fun NewBookingDialog(
   var baseAmountText by remember(initialBooking) {
     mutableStateOf(if (initialBooking != null) initialBooking.baseAmount.toString() else "")
   }
+  var tollChargesText by remember(initialBooking) {
+    mutableStateOf(if (initialBooking != null && initialBooking.tollCharges > 0L) initialBooking.tollCharges.toString() else "")
+  }
+  var parkingChargesText by remember(initialBooking) {
+    mutableStateOf(if (initialBooking != null && initialBooking.parkingCharges > 0L) initialBooking.parkingCharges.toString() else "")
+  }
+  var includeOptionalGst by remember(initialBooking) {
+    mutableStateOf((initialBooking?.gstAmount ?: 0L) > 0L)
+  }
+  var selectedGstSlab by remember(initialBooking, defaultGstPercent) {
+    val inferredSlab = if (initialBooking != null && initialBooking.baseAmount > 0L && initialBooking.gstAmount > 0L) {
+      ((initialBooking.gstAmount * 100L) / initialBooking.baseAmount).toInt()
+    } else if (defaultGstPercent > 0) {
+      defaultGstPercent
+    } else {
+      5
+    }
+    mutableStateOf(if (inferredSlab in listOf(5, 12, 18)) inferredSlab else 5)
+  }
   var expenseAmountText by remember(initialBooking) {
     mutableStateOf(if (initialBooking != null) initialBooking.expenseAmount.toString() else "")
   }
@@ -432,8 +454,10 @@ fun NewBookingDialog(
   }
 
   val liveBase = baseAmountText.toLongOrNull() ?: 0L
-  val liveGst = (liveBase * defaultGstPercent) / 100L
-  val liveTotal = liveBase + liveGst
+  val liveToll = tollChargesText.toLongOrNull() ?: 0L
+  val liveParking = parkingChargesText.toLongOrNull() ?: 0L
+  val liveGst = if (includeOptionalGst) (liveBase * selectedGstSlab) / 100L else 0L
+  val liveTotal = liveBase + liveToll + liveParking + liveGst
   val liveExpense = expenseAmountText.toLongOrNull() ?: 0L
   val liveNetMargin = liveTotal - liveExpense - liveGst
 
@@ -441,9 +465,9 @@ fun NewBookingDialog(
     badgeText = if (isEditMode) "UPDATE BOOKING & INVOICE" else "DISPATCH & BILLING ENTRY",
     badgeBg = KpiGreenBg,
     badgeFg = NewBookingGreen,
-    title = if (isEditMode) "Edit Booking & Dispatch Details" else "New Fleet Booking & GST Invoice",
-    subtitle = "Enter passenger details, pickup/drop route, fleet vehicle & driver assignment, and fare details.",
-    primaryButtonText = if (isEditMode) "Update Booking" else "Confirm & Dispatch Booking",
+    title = if (isEditMode) "Edit Booking & Invoice Details" else "New Fleet Booking & Invoice",
+    subtitle = "Enter passenger details, route, fleet vehicle & driver, base fare, toll/parking charges, and optional GST.",
+    primaryButtonText = if (isEditMode) "Update Booking & Invoice" else "Save Booking & Generate PDF",
     primaryButtonColor = NewBookingGreen,
     onQuickFillSample = {
       customerName = "Infosys Executive Travel Desk"
@@ -454,6 +478,9 @@ fun NewBookingDialog(
       vehicleNumber = availableVehicles.firstOrNull()?.registrationNumber ?: "KA-01-MG-4590"
       driverName = availableDrivers.firstOrNull()?.name ?: "Ramesh Kumar"
       baseAmountText = "6500"
+      tollChargesText = "320"
+      parkingChargesText = "150"
+      includeOptionalGst = false
       expenseAmountText = "1250"
       distanceText = "145"
       tripStatus = "Active"
@@ -468,11 +495,18 @@ fun NewBookingDialog(
       vehicleNumber = ""
       driverName = ""
       baseAmountText = ""
+      tollChargesText = ""
+      parkingChargesText = ""
+      includeOptionalGst = false
       expenseAmountText = ""
       distanceText = ""
     },
     onDismiss = onDismiss,
     onConfirm = {
+      val resolvedBase = baseAmountText.toLongOrNull() ?: 4500L
+      val resolvedToll = tollChargesText.toLongOrNull() ?: 0L
+      val resolvedParking = parkingChargesText.toLongOrNull() ?: 0L
+      val resolvedGst = if (includeOptionalGst) (resolvedBase * selectedGstSlab) / 100L else 0L
       onConfirm(
         customerName.ifBlank { "Rajesh Sharma" },
         customerPhone.ifBlank { "+91 98450 11223" },
@@ -484,7 +518,10 @@ fun NewBookingDialog(
         tripStatus,
         paymentStatus,
         paymentChannel,
-        baseAmountText.toLongOrNull() ?: 4500L,
+        resolvedBase,
+        resolvedToll,
+        resolvedParking,
+        resolvedGst,
         expenseAmountText.toLongOrNull() ?: 900L,
         distanceText.toLongOrNull() ?: 120L,
         tripDate.ifBlank { defaultDate }
@@ -677,10 +714,10 @@ fun NewBookingDialog(
       }
     }
 
-    // Section 4: Fare, GST & Payment Channel
+    // Section 4: Tariff, Toll & Parking Charges, and Optional GST
     FormSectionCard(
       stepNumber = "4",
-      sectionTitle = "Tariff, GST ($defaultGstPercent%) & Trip Expenses",
+      sectionTitle = "Base Fare, Toll & Parking Charges, and Optional GST",
       accentColor = KpiGreenIcon
     ) {
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -696,12 +733,76 @@ fun NewBookingDialog(
         FormFieldInput(
           value = expenseAmountText,
           onValueChange = { expenseAmountText = it },
-          label = "Fuel / Toll Expenses (₹)",
+          label = "Internal Trip Expenses (₹)",
           placeholder = "e.g., 1200",
           icon = Icons.Default.LocalGasStation,
           isNumeric = true,
           modifier = Modifier.weight(1f)
         )
+      }
+
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormFieldInput(
+          value = tollChargesText,
+          onValueChange = { tollChargesText = it },
+          label = "Toll / FASTag Charges (₹)",
+          placeholder = "0 (Optional)",
+          icon = Icons.Default.Route,
+          isNumeric = true,
+          modifier = Modifier.weight(1f)
+        )
+        FormFieldInput(
+          value = parkingChargesText,
+          onValueChange = { parkingChargesText = it },
+          label = "Parking / Entry Charges (₹)",
+          placeholder = "0 (Optional)",
+          icon = Icons.Default.LocationOn,
+          isNumeric = true,
+          modifier = Modifier.weight(1f)
+        )
+      }
+
+      // Optional GST Selection Row (OFF by default!)
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(10.dp))
+          .background(CanvasBackground)
+          .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+          .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+      ) {
+        Text(
+          text = "GST Tax Option (Default: No GST / Optional)",
+          fontSize = 11.sp,
+          fontWeight = FontWeight.ExtraBold,
+          color = TextPrimaryDark
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          FilterChip(
+            selected = !includeOptionalGst,
+            onClick = { includeOptionalGst = false },
+            label = { Text("No GST (0%)", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+            colors = FilterChipDefaults.filterChipColors(
+              selectedContainerColor = KpiBlueBg,
+              selectedLabelColor = SidebarActiveBlue
+            )
+          )
+          listOf(5, 12, 18).forEach { slab ->
+            FilterChip(
+              selected = includeOptionalGst && selectedGstSlab == slab,
+              onClick = {
+                includeOptionalGst = true
+                selectedGstSlab = slab
+              },
+              label = { Text("+ $slab% GST", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+              colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = KpiGreenBg,
+                selectedLabelColor = KpiGreenIcon
+              )
+            )
+          }
+        }
       }
 
       Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -745,20 +846,24 @@ fun NewBookingDialog(
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Column {
+          Column(modifier = Modifier.weight(1f)) {
             Text(
-              text = "LIVE GST INVOICE PREVIEW",
+              text = "LIVE INVOICE BREAKDOWN PREVIEW",
               fontSize = 10.sp,
               fontWeight = FontWeight.ExtraBold,
               color = KpiGreenIcon
             )
             Text(
-              text = "Base: ${formatInr(liveBase)} + GST ($defaultGstPercent%): ${formatInr(liveGst)}",
+              text = "Base: ${formatInr(liveBase)} • Toll: ${formatInr(liveToll)} • Parking: ${formatInr(liveParking)}",
               fontSize = 12.sp,
               color = TextPrimaryDark
             )
             Text(
-              text = "Est. Net Profit (after expenses): ${formatInr(liveNetMargin)}",
+              text = if (includeOptionalGst) {
+                "Optional GST ($selectedGstSlab%): ${formatInr(liveGst)} • Net Profit: ${formatInr(liveNetMargin)}"
+              } else {
+                "GST: ₹0 (Not Applied) • Net Profit: ${formatInr(liveNetMargin)}"
+              },
               fontSize = 11.sp,
               fontWeight = FontWeight.SemiBold,
               color = KpiGreenIcon

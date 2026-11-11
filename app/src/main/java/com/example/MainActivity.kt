@@ -408,7 +408,7 @@ fun FleetCrmCommandCenterScreen(
         showNewBookingDialog = false
         editingBooking = null
       },
-      onConfirm = { name, phone, pickup, drop, cat, vehNo, driver, tStat, pStat, chan, base, exp, dist, date ->
+      onConfirm = { name, phone, pickup, drop, cat, vehNo, driver, tStat, pStat, chan, base, toll, parking, gst, exp, dist, date ->
         viewModel.saveBookingDetails(
           existingBooking = editingBooking,
           customerName = name,
@@ -422,6 +422,9 @@ fun FleetCrmCommandCenterScreen(
           paymentStatus = pStat,
           paymentChannel = chan,
           baseAmount = base,
+          tollCharges = toll,
+          parkingCharges = parking,
+          gstAmount = gst,
           expenseAmount = exp,
           distanceKm = dist,
           tripDate = date
@@ -561,6 +564,10 @@ fun FleetCrmCommandCenterScreen(
       agencyName = agencyName,
       agencyGstin = agencyGstin,
       gstPercent = defaultGstPercent,
+      onEditInvoice = {
+        editingBooking = invoiceBooking
+        showNewBookingDialog = true
+      },
       onDismiss = { viewModel.dismissInvoicePdfDialog() },
       onStatusMessage = { msg -> viewModel.showStatusMessage(msg) }
     )

@@ -52,8 +52,8 @@ service cloud.firestore {
              data.keys().hasOnly([
                'userId', 'customerName', 'customerPhone', 'pickupLocation', 'dropLocation',
                'vehicleCategory', 'vehicleNumber', 'driverName', 'tripStatus', 'paymentStatus',
-               'paymentChannel', 'baseAmount', 'gstAmount', 'totalAmount', 'expenseAmount',
-               'distanceKm', 'tripDate', 'createdAt', 'updatedAt'
+               'paymentChannel', 'baseAmount', 'tollCharges', 'parkingCharges', 'gstAmount',
+               'totalAmount', 'expenseAmount', 'distanceKm', 'tripDate', 'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
              data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100 &&
@@ -67,6 +67,8 @@ service cloud.firestore {
              data.paymentStatus is string && data.paymentStatus in ['Paid', 'Pending'] &&
              data.paymentChannel is string && data.paymentChannel.size() >= 1 && data.paymentChannel.size() <= 50 &&
              data.baseAmount is int && data.baseAmount >= 0 && data.baseAmount <= 100000000 &&
+             (!('tollCharges' in data) || (data.tollCharges is int && data.tollCharges >= 0 && data.tollCharges <= 100000000)) &&
+             (!('parkingCharges' in data) || (data.parkingCharges is int && data.parkingCharges >= 0 && data.parkingCharges <= 100000000)) &&
              data.gstAmount is int && data.gstAmount >= 0 && data.gstAmount <= 100000000 &&
              data.totalAmount is int && data.totalAmount >= 0 && data.totalAmount <= 200000000 &&
              data.expenseAmount is int && data.expenseAmount >= 0 && data.expenseAmount <= 100000000 &&
@@ -178,8 +180,9 @@ service cloud.firestore {
                          incoming().diff(existing()).affectedKeys().hasOnly([
                            'customerName', 'customerPhone', 'pickupLocation', 'dropLocation',
                            'vehicleCategory', 'vehicleNumber', 'driverName', 'tripStatus',
-                           'paymentStatus', 'paymentChannel', 'baseAmount', 'gstAmount',
-                           'totalAmount', 'expenseAmount', 'distanceKm', 'tripDate', 'updatedAt'
+                           'paymentStatus', 'paymentChannel', 'baseAmount', 'tollCharges',
+                           'parkingCharges', 'gstAmount', 'totalAmount', 'expenseAmount',
+                           'distanceKm', 'tripDate', 'updatedAt'
                          ]);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(bookingId);
       }

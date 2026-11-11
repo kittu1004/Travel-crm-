@@ -53,6 +53,8 @@ data class Booking(
   val paymentStatus: String = "Pending",
   val paymentChannel: String = "UPI",
   val baseAmount: Long = 0L,
+  val tollCharges: Long = 0L,
+  val parkingCharges: Long = 0L,
   val gstAmount: Long = 0L,
   val totalAmount: Long = 0L,
   val expenseAmount: Long = 0L,

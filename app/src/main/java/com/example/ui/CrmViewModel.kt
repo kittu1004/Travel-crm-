@@ -53,7 +53,7 @@ class CrmViewModel(
   private val _agencyGstin = MutableStateFlow("29AABCF9901K1Z8")
   val agencyGstin: StateFlow<String> = _agencyGstin.asStateFlow()
 
-  private val _defaultGstPercent = MutableStateFlow(5)
+  private val _defaultGstPercent = MutableStateFlow(0)
   val defaultGstPercent: StateFlow<Int> = _defaultGstPercent.asStateFlow()
 
   val bookingsState: StateFlow<UiState<List<Booking>>> =
@@ -215,13 +215,18 @@ class CrmViewModel(
     paymentStatus: String,
     paymentChannel: String,
     baseAmount: Long,
+    tollCharges: Long,
+    parkingCharges: Long,
+    gstAmount: Long,
     expenseAmount: Long,
     distanceKm: Long,
     tripDate: String,
   ) {
     val safeBase = baseAmount.coerceAtLeast(0L)
-    val gstAmount = (safeBase * _defaultGstPercent.value) / 100L
-    val totalAmount = safeBase + gstAmount
+    val safeToll = tollCharges.coerceAtLeast(0L)
+    val safeParking = parkingCharges.coerceAtLeast(0L)
+    val safeGst = gstAmount.coerceAtLeast(0L)
+    val totalAmount = safeBase + safeToll + safeParking + safeGst
     val resolvedCustomer = customerName.trim().ifBlank { "Walk-in Corporate Client" }
 
     viewModelScope.launch {
@@ -238,7 +243,9 @@ class CrmViewModel(
         paymentStatus = paymentStatus,
         paymentChannel = paymentChannel.trim().ifBlank { "UPI" },
         baseAmount = safeBase,
-        gstAmount = gstAmount.coerceAtLeast(0L),
+        tollCharges = safeToll,
+        parkingCharges = safeParking,
+        gstAmount = safeGst,
         totalAmount = totalAmount.coerceAtLeast(0L),
         expenseAmount = expenseAmount.coerceAtLeast(0L),
         distanceKm = distanceKm.coerceAtLeast(1L),
@@ -254,7 +261,7 @@ class CrmViewModel(
       result.fold(
         onSuccess = {
           val actionWord = if (existingBooking != null) "Updated" else "Created"
-          _statusBanner.value = "$actionWord booking for $resolvedCustomer (${formatInr(totalAmount)}) — GST Invoice PDF generated!"
+          _statusBanner.value = "$actionWord booking for $resolvedCustomer (${formatInr(totalAmount)}) — Invoice PDF generated!"
           _latestInvoiceBooking.value = bookingPayload
         },
         onFailure = { e ->
@@ -276,6 +283,9 @@ class CrmViewModel(
     paymentStatus: String,
     paymentChannel: String,
     baseAmount: Long,
+    tollCharges: Long = 0L,
+    parkingCharges: Long = 0L,
+    gstAmount: Long = 0L,
     expenseAmount: Long,
     distanceKm: Long,
     tripDate: String,
@@ -293,6 +303,9 @@ class CrmViewModel(
       paymentStatus = paymentStatus,
       paymentChannel = paymentChannel,
       baseAmount = baseAmount,
+      tollCharges = tollCharges,
+      parkingCharges = parkingCharges,
+      gstAmount = gstAmount,
       expenseAmount = expenseAmount,
       distanceKm = distanceKm,
       tripDate = tripDate,
@@ -524,6 +537,8 @@ class CrmViewModel(
         paymentStatus = "Pending",
         paymentChannel = "UPI",
         baseAmount = base,
+        tollCharges = 0L,
+        parkingCharges = 0L,
         gstAmount = gst,
         totalAmount = base + gst,
         expenseAmount = (base * 20L) / 100L,
@@ -531,7 +546,7 @@ class CrmViewModel(
         tripDate = todayDateString(),
       )
       repository.addBooking(convertedBooking).onSuccess {
-        _statusBanner.value = "Converted lead '${lead.clientName}' into Booking & generated GST Invoice PDF!"
+        _statusBanner.value = "Converted lead '${lead.clientName}' into Booking & generated Invoice PDF!"
         _latestInvoiceBooking.value = convertedBooking
       }
     }
@@ -602,8 +617,8 @@ class CrmViewModel(
   fun updateSystemSettings(agency: String, gstin: String, gstSlab: Int) {
     _agencyName.value = agency.ifBlank { "Apex Fleet & Travel Operations" }
     _agencyGstin.value = gstin.ifBlank { "29AABCF9901K1Z8" }
-    _defaultGstPercent.value = gstSlab.coerceIn(5, 18)
-    _statusBanner.value = "System settings & GST slab (${_defaultGstPercent.value}%) saved."
+    _defaultGstPercent.value = gstSlab.coerceIn(0, 18)
+    _statusBanner.value = "System settings & optional GST rate (${_defaultGstPercent.value}%) saved."
   }
 
   companion object {

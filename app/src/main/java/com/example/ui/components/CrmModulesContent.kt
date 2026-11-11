@@ -353,12 +353,24 @@ fun CrmModuleDispatcher(
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                  Text(
-                    "Total: ${formatInr(booking.totalAmount)} (GST: ${formatInr(booking.gstAmount)})",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    color = TextPrimaryDark
-                  )
+                  Column {
+                    Text(
+                      "Total: ${formatInr(booking.totalAmount)}",
+                      fontWeight = FontWeight.ExtraBold,
+                      fontSize = 14.sp,
+                      color = TextPrimaryDark
+                    )
+                    Text(
+                      text = buildString {
+                        append("Base: ${formatInr(booking.baseAmount)}")
+                        if (booking.tollCharges > 0) append(" • Toll: ${formatInr(booking.tollCharges)}")
+                        if (booking.parkingCharges > 0) append(" • Parking: ${formatInr(booking.parkingCharges)}")
+                        if (booking.gstAmount > 0) append(" • GST: ${formatInr(booking.gstAmount)}") else append(" • No GST")
+                      },
+                      fontSize = 11.sp,
+                      color = TextSecondarySlate
+                    )
+                  }
                   Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(
                       onClick = { onDownloadInvoicePdf(booking) },
@@ -414,8 +426,8 @@ fun CrmModuleDispatcher(
 
     CrmSection.INVOICES_BILLING -> {
       CrmModuleSectionHeader(
-        title = "Invoices & GST Billing Ledger",
-        subtitle = "Tax invoices with base fare, GST breakdown, payment channel, and settlement status.",
+        title = "Invoices & Billing Ledger",
+        subtitle = "Trip & tax invoices with base fare, toll/parking charges, optional GST, and PDF export.",
         actionLabel = "New Invoice",
         onActionClick = onOpenNewBooking,
         onBackToDashboard = onBackToDashboard
@@ -446,7 +458,12 @@ fun CrmModuleDispatcher(
                     color = TextPrimaryDark
                   )
                   Text(
-                    "Base: ${formatInr(b.baseAmount)} + GST: ${formatInr(b.gstAmount)} • Channel: ${b.paymentChannel}",
+                    text = buildString {
+                      append("Base: ${formatInr(b.baseAmount)}")
+                      append(" • Toll: ${formatInr(b.tollCharges)}")
+                      append(" • Parking: ${formatInr(b.parkingCharges)}")
+                      if (b.gstAmount > 0L) append(" • GST: ${formatInr(b.gstAmount)}") else append(" • GST: Optional (₹0)")
+                    },
                     fontSize = 12.sp,
                     color = TextSecondarySlate
                   )
@@ -461,8 +478,17 @@ fun CrmModuleDispatcher(
                   Spacer(modifier = Modifier.height(4.dp))
                   Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(
+                      onClick = { onEditBooking(b) },
+                      contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(3.dp))
+                      Text("Edit", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
                       onClick = { onDownloadInvoicePdf(b) },
-                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                      contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                       shape = RoundedCornerShape(8.dp)
                     ) {
                       Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(14.dp))
