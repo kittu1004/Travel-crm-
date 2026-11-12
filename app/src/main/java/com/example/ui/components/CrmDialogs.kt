@@ -27,10 +27,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CurrencyRupee
@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -45,18 +46,26 @@ import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,11 +89,11 @@ import com.example.data.Customer
 import com.example.data.Driver
 import com.example.data.Lead
 import com.example.data.Vehicle
+import com.example.data.formatToDdMmYyyy
 import com.example.ui.formatInr
 import com.example.ui.theme.CanvasBackground
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
-import com.example.ui.theme.KpiAmberBg
 import com.example.ui.theme.KpiAmberIcon
 import com.example.ui.theme.KpiBlueBg
 import com.example.ui.theme.KpiBlueIcon
@@ -102,9 +111,12 @@ import com.example.ui.theme.SidebarNavy
 import com.example.ui.theme.SidebarTextMuted
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondarySlate
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 private val VEHICLE_CATEGORIES = listOf("Sedans", "Compact SUVs", "SUVs", "Tourist Travellers")
-private val TRIP_STATUSES = listOf("Active", "Completed", "Cancelled")
 private val PAYMENT_STATUSES = listOf("Paid", "Pending")
 private val PAYMENT_CHANNELS = listOf("UPI", "Bank NEFT", "Cash", "Corporate Card")
 private val DRIVER_STATUSES = listOf("Available", "On Trip", "Off Duty")
@@ -121,7 +133,6 @@ fun CrmFormModalShell(
   subtitle: String,
   primaryButtonText: String,
   primaryButtonColor: Color = SidebarActiveBlue,
-  onQuickFillSample: (() -> Unit)? = null,
   onClearFields: (() -> Unit)? = null,
   onDismiss: () -> Unit,
   onConfirm: () -> Unit,
@@ -143,7 +154,7 @@ fun CrmFormModalShell(
         .heightIn(max = 760.dp)
     ) {
       Column(modifier = Modifier.fillMaxWidth()) {
-        // Dark Command Center Modal Header
+        // Dark Modal Header (Auto-Fill Sample option removed)
         Column(
           modifier = Modifier
             .fillMaxWidth()
@@ -170,55 +181,19 @@ fun CrmFormModalShell(
               )
             }
 
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            IconButton(
+              onClick = onDismiss,
+              modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.1f))
             ) {
-              if (onQuickFillSample != null) {
-                Surface(
-                  color = SidebarActiveBlue.copy(alpha = 0.22f),
-                  shape = RoundedCornerShape(8.dp),
-                  border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.6f)),
-                  modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onQuickFillSample() }
-                    .testTag("modal_quick_fill_button")
-                ) {
-                  Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.AutoAwesome,
-                      contentDescription = null,
-                      tint = Color.White,
-                      modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                      text = "Auto-Fill Sample",
-                      color = Color.White,
-                      fontSize = 11.sp,
-                      fontWeight = FontWeight.Bold
-                    )
-                  }
-                }
-              }
-
-              IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                  .size(32.dp)
-                  .clip(CircleShape)
-                  .background(Color.White.copy(alpha = 0.1f))
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Close,
-                  contentDescription = "Close Modal",
-                  tint = Color.White,
-                  modifier = Modifier.size(16.dp)
-                )
-              }
+              Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Modal",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+              )
             }
           }
 
@@ -380,11 +355,191 @@ private fun FormFieldInput(
   )
 }
 
+/**
+ * Reusable Select / Dropdown field (<select> tag equivalent) using Material 3 ExposedDropdownMenuBox.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FormSelectDropdown(
+  selectedValue: String,
+  options: List<String>,
+  onValueSelected: (String) -> Unit,
+  label: String,
+  icon: ImageVector,
+  modifier: Modifier = Modifier,
+  testTagName: String = "",
+) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+    expanded = expanded,
+    onExpandedChange = { expanded = !expanded },
+    modifier = modifier
+  ) {
+    OutlinedTextField(
+      value = selectedValue,
+      onValueChange = {},
+      readOnly = true,
+      singleLine = true,
+      label = { Text(label, fontSize = 12.sp) },
+      leadingIcon = {
+        Icon(
+          imageVector = icon,
+          contentDescription = null,
+          tint = SidebarActiveBlue,
+          modifier = Modifier.size(18.dp)
+        )
+      },
+      trailingIcon = {
+        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+      },
+      shape = RoundedCornerShape(10.dp),
+      colors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = SidebarActiveBlue,
+        unfocusedBorderColor = CardBorder,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = CanvasBackground.copy(alpha = 0.5f)
+      ),
+      modifier = Modifier
+        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+        .fillMaxWidth()
+        .then(if (testTagName.isNotBlank()) Modifier.testTag(testTagName) else Modifier)
+    )
+
+    ExposedDropdownMenu(
+      expanded = expanded,
+      onDismissRequest = { expanded = false },
+      containerColor = Color.White
+    ) {
+      options.forEach { option ->
+        DropdownMenuItem(
+          text = {
+            Text(
+              text = option,
+              fontSize = 13.sp,
+              fontWeight = if (option == selectedValue) FontWeight.ExtraBold else FontWeight.Medium,
+              color = if (option == selectedValue) SidebarActiveBlue else TextPrimaryDark
+            )
+          },
+          onClick = {
+            onValueSelected(option)
+            expanded = false
+          }
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Reusable Date Field with an interactive Calendar Picker popup (DatePickerDialog)
+ * formatting dates as DD-MM-YYYY (date-month-year).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FormCalendarDateField(
+  dateValue: String,
+  onDateChange: (String) -> Unit,
+  label: String = "Date (DD-MM-YYYY)",
+  modifier: Modifier = Modifier,
+) {
+  var showCalendarDialog by remember { mutableStateOf(false) }
+
+  Box(modifier = modifier) {
+    OutlinedTextField(
+      value = dateValue,
+      onValueChange = { onDateChange(it) },
+      label = { Text(label, fontSize = 12.sp) },
+      placeholder = { Text("DD-MM-YYYY", fontSize = 12.sp, color = TextSecondarySlate.copy(alpha = 0.65f)) },
+      leadingIcon = {
+        IconButton(
+          onClick = { showCalendarDialog = true },
+          modifier = Modifier.size(28.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.CalendarMonth,
+            contentDescription = "Open Calendar",
+            tint = SidebarActiveBlue,
+            modifier = Modifier.size(18.dp)
+          )
+        }
+      },
+      trailingIcon = {
+        TextButton(
+          onClick = { showCalendarDialog = true },
+          contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.CalendarToday,
+            contentDescription = "Pick Date from Calendar",
+            tint = SidebarActiveBlue,
+            modifier = Modifier.size(15.dp)
+          )
+          Spacer(modifier = Modifier.width(3.dp))
+          Text("Calendar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
+        }
+      },
+      singleLine = true,
+      shape = RoundedCornerShape(10.dp),
+      colors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = SidebarActiveBlue,
+        unfocusedBorderColor = CardBorder,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = CanvasBackground.copy(alpha = 0.5f)
+      ),
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag("calendar_date_input_field")
+    )
+  }
+
+  if (showCalendarDialog) {
+    val initialMillis = remember(dateValue) {
+      runCatching {
+        val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.US).apply {
+          timeZone = TimeZone.getTimeZone("UTC")
+        }
+        sdf.parse(formatToDdMmYyyy(dateValue))?.time
+      }.getOrNull() ?: System.currentTimeMillis()
+    }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+    DatePickerDialog(
+      onDismissRequest = { showCalendarDialog = false },
+      confirmButton = {
+        Button(
+          onClick = {
+            val selectedMillis = datePickerState.selectedDateMillis
+            if (selectedMillis != null) {
+              val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+              }
+              onDateChange(sdf.format(Date(selectedMillis)))
+            }
+            showCalendarDialog = false
+          },
+          colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue)
+        ) {
+          Text("Select Date", color = Color.White, fontWeight = FontWeight.Bold)
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { showCalendarDialog = false }) {
+          Text("Cancel", color = TextSecondarySlate, fontWeight = FontWeight.SemiBold)
+        }
+      }
+    ) {
+      DatePicker(state = datePickerState)
+    }
+  }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NewBookingDialog(
   defaultDate: String,
   initialBooking: Booking? = null,
+  isInvoiceForm: Boolean = false,
   availableDrivers: List<Driver> = emptyList(),
   availableVehicles: List<Vehicle> = emptyList(),
   availableCustomers: List<Customer> = emptyList(),
@@ -392,12 +547,14 @@ fun NewBookingDialog(
   onDismiss: () -> Unit,
   onConfirm: (
     customerName: String,
+    companyName: String,
     customerPhone: String,
     pickup: String,
     drop: String,
     category: String,
     vehicleNumber: String,
     driverName: String,
+    driverPhone: String,
     tripStatus: String,
     paymentStatus: String,
     paymentChannel: String,
@@ -411,14 +568,18 @@ fun NewBookingDialog(
   ) -> Unit,
 ) {
   val isEditMode = initialBooking != null
+  val normalizedDefaultDate = formatToDdMmYyyy(defaultDate)
+
   var customerName by remember(initialBooking) { mutableStateOf(initialBooking?.customerName ?: "") }
+  var companyName by remember(initialBooking) { mutableStateOf(initialBooking?.companyName ?: "") }
   var customerPhone by remember(initialBooking) { mutableStateOf(initialBooking?.customerPhone ?: "") }
   var pickup by remember(initialBooking) { mutableStateOf(initialBooking?.pickupLocation ?: "") }
   var drop by remember(initialBooking) { mutableStateOf(initialBooking?.dropLocation ?: "") }
   var category by remember(initialBooking) { mutableStateOf(initialBooking?.vehicleCategory ?: "SUVs") }
   var vehicleNumber by remember(initialBooking) { mutableStateOf(initialBooking?.vehicleNumber ?: "") }
   var driverName by remember(initialBooking) { mutableStateOf(initialBooking?.driverName ?: "") }
-  var tripStatus by remember(initialBooking) { mutableStateOf(initialBooking?.tripStatus ?: "Active") }
+  var driverPhone by remember(initialBooking) { mutableStateOf(initialBooking?.driverPhone ?: "") }
+  val tripStatus = initialBooking?.tripStatus ?: "Active"
   var paymentStatus by remember(initialBooking) { mutableStateOf(initialBooking?.paymentStatus ?: "Paid") }
   var paymentChannel by remember(initialBooking) { mutableStateOf(initialBooking?.paymentChannel ?: "UPI") }
   var baseAmountText by remember(initialBooking) {
@@ -443,14 +604,12 @@ fun NewBookingDialog(
     }
     mutableStateOf(if (inferredSlab in listOf(5, 12, 18)) inferredSlab else 5)
   }
-  var expenseAmountText by remember(initialBooking) {
-    mutableStateOf(if (initialBooking != null) initialBooking.expenseAmount.toString() else "")
-  }
   var distanceText by remember(initialBooking) {
     mutableStateOf(if (initialBooking != null) initialBooking.distanceKm.toString() else "")
   }
   var tripDate by remember(initialBooking) {
-    mutableStateOf(initialBooking?.tripDate?.ifBlank { defaultDate } ?: defaultDate)
+    val raw = initialBooking?.tripDate?.ifBlank { normalizedDefaultDate } ?: normalizedDefaultDate
+    mutableStateOf(formatToDdMmYyyy(raw))
   }
 
   val liveBase = baseAmountText.toLongOrNull() ?: 0L
@@ -458,47 +617,42 @@ fun NewBookingDialog(
   val liveParking = parkingChargesText.toLongOrNull() ?: 0L
   val liveGst = if (includeOptionalGst) (liveBase * selectedGstSlab) / 100L else 0L
   val liveTotal = liveBase + liveToll + liveParking + liveGst
-  val liveExpense = expenseAmountText.toLongOrNull() ?: 0L
-  val liveNetMargin = liveTotal - liveExpense - liveGst
 
   CrmFormModalShell(
-    badgeText = if (isEditMode) "UPDATE BOOKING & INVOICE" else "DISPATCH & BILLING ENTRY",
+    badgeText = when {
+      isInvoiceForm && isEditMode -> "EDIT INVOICE DETAILS"
+      isInvoiceForm -> "INVOICE FORM"
+      isEditMode -> "UPDATE BOOKING DETAILS"
+      else -> "BOOKING ENTRY FORM"
+    },
     badgeBg = KpiGreenBg,
     badgeFg = NewBookingGreen,
-    title = if (isEditMode) "Edit Booking & Invoice Details" else "New Fleet Booking & Invoice",
-    subtitle = "Enter passenger details, route, fleet vehicle & driver, base fare, toll/parking charges, and optional GST.",
-    primaryButtonText = if (isEditMode) "Update Booking & Invoice" else "Save Booking & Generate PDF",
-    primaryButtonColor = NewBookingGreen,
-    onQuickFillSample = {
-      customerName = "Infosys Executive Travel Desk"
-      customerPhone = "+91 98450 11223"
-      pickup = "Bengaluru Airport Terminal 2"
-      drop = "Electronic City Phase 1 Campus"
-      category = "SUVs"
-      vehicleNumber = availableVehicles.firstOrNull()?.registrationNumber ?: "KA-01-MG-4590"
-      driverName = availableDrivers.firstOrNull()?.name ?: "Ramesh Kumar"
-      baseAmountText = "6500"
-      tollChargesText = "320"
-      parkingChargesText = "150"
-      includeOptionalGst = false
-      expenseAmountText = "1250"
-      distanceText = "145"
-      tripStatus = "Active"
-      paymentStatus = "Paid"
-      paymentChannel = "UPI"
+    title = when {
+      isInvoiceForm && isEditMode -> "Edit Invoice Details"
+      isInvoiceForm -> "Invoice Form"
+      isEditMode -> "Edit Booking Details"
+      else -> "New Booking Form"
     },
+    subtitle = "Enter customer & company name, DD-MM-YYYY calendar date, route, driver details, and billing.",
+    primaryButtonText = when {
+      isInvoiceForm -> "Save Invoice & Generate PDF"
+      isEditMode -> "Update Booking & Invoice"
+      else -> "Save Booking & Generate PDF"
+    },
+    primaryButtonColor = NewBookingGreen,
     onClearFields = {
       customerName = ""
+      companyName = ""
       customerPhone = ""
       pickup = ""
       drop = ""
       vehicleNumber = ""
       driverName = ""
+      driverPhone = ""
       baseAmountText = ""
       tollChargesText = ""
       parkingChargesText = ""
       includeOptionalGst = false
-      expenseAmountText = ""
       distanceText = ""
     },
     onDismiss = onDismiss,
@@ -509,12 +663,14 @@ fun NewBookingDialog(
       val resolvedGst = if (includeOptionalGst) (resolvedBase * selectedGstSlab) / 100L else 0L
       onConfirm(
         customerName.ifBlank { "Rajesh Sharma" },
+        companyName,
         customerPhone.ifBlank { "+91 98450 11223" },
         pickup.ifBlank { "Bengaluru Airport T2" },
         drop.ifBlank { "Whitefield Tech Park" },
         category,
         vehicleNumber.ifBlank { "KA-01-MG-4590" },
         driverName.ifBlank { "Ramesh Kumar" },
+        driverPhone.ifBlank { "+91 98450 11223" },
         tripStatus,
         paymentStatus,
         paymentChannel,
@@ -522,48 +678,37 @@ fun NewBookingDialog(
         resolvedToll,
         resolvedParking,
         resolvedGst,
-        expenseAmountText.toLongOrNull() ?: 900L,
+        initialBooking?.expenseAmount ?: 0L,
         distanceText.toLongOrNull() ?: 120L,
-        tripDate.ifBlank { defaultDate }
+        formatToDdMmYyyy(tripDate.ifBlank { normalizedDefaultDate })
       )
       onDismiss()
     }
   ) {
-    // Section 1: Customer & Schedule
+    // Section 1: Customer Name, Company Name & Calendar Schedule
     FormSectionCard(
       stepNumber = "1",
-      sectionTitle = "Passenger / Corporate Client & Schedule",
+      sectionTitle = "Customer Name, Company Name & Date",
       accentColor = SidebarActiveBlue
     ) {
-      if (availableCustomers.isNotEmpty()) {
-        Text(
-          text = "Quick-Select Saved Corporate Client:",
-          fontSize = 11.sp,
-          fontWeight = FontWeight.Bold,
-          color = TextSecondarySlate
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormFieldInput(
+          value = customerName,
+          onValueChange = { customerName = it },
+          label = "Customer Name",
+          placeholder = "e.g., Rajesh Sharma",
+          icon = Icons.Default.Person,
+          modifier = Modifier.weight(1f)
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          availableCustomers.take(4).forEach { client ->
-            FilterChip(
-              selected = customerName == client.companyName,
-              onClick = {
-                customerName = client.companyName
-                customerPhone = client.phone
-              },
-              label = { Text(client.companyName, fontSize = 11.sp) }
-            )
-          }
-        }
+        FormFieldInput(
+          value = companyName,
+          onValueChange = { companyName = it },
+          label = "Company Name",
+          placeholder = "e.g., Wipro Ltd",
+          icon = Icons.Default.Business,
+          modifier = Modifier.weight(1f)
+        )
       }
-
-      FormFieldInput(
-        value = customerName,
-        onValueChange = { customerName = it },
-        label = "Customer or Corporate Company Name",
-        placeholder = "e.g., Rajesh Sharma / Wipro Ltd",
-        icon = Icons.Default.Person,
-        modifier = Modifier.fillMaxWidth()
-      )
 
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         FormFieldInput(
@@ -574,21 +719,19 @@ fun NewBookingDialog(
           icon = Icons.Default.Phone,
           modifier = Modifier.weight(1f)
         )
-        FormFieldInput(
-          value = tripDate,
-          onValueChange = { tripDate = it },
-          label = "Trip Date (YYYY-MM-DD)",
-          placeholder = defaultDate,
-          icon = Icons.Default.CalendarToday,
-          modifier = Modifier.weight(1f)
+        FormCalendarDateField(
+          dateValue = tripDate,
+          onDateChange = { tripDate = it },
+          label = "Date (DD-MM-YYYY)",
+          modifier = Modifier.weight(1.2f)
         )
       }
     }
 
-    // Section 2: Route & Odometer
+    // Section 2: Pickup, Drop Destination & Distance (Trip Dispatch Status Removed)
     FormSectionCard(
       stepNumber = "2",
-      sectionTitle = "Pickup, Drop Destination & Trip Status",
+      sectionTitle = "Pickup, Drop Destination & Distance",
       accentColor = KpiTealIcon
     ) {
       FormFieldInput(
@@ -608,138 +751,77 @@ fun NewBookingDialog(
         modifier = Modifier.fillMaxWidth()
       )
 
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        FormFieldInput(
-          value = distanceText,
-          onValueChange = { distanceText = it },
-          label = "Est. Distance (km)",
-          placeholder = "e.g., 140",
-          icon = Icons.Default.Speed,
-          isNumeric = true,
-          modifier = Modifier.weight(1f)
-        )
-        Column(modifier = Modifier.weight(1.3f)) {
-          Text("Trip Dispatch Status", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-          FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            TRIP_STATUSES.forEach { st ->
-              FilterChip(
-                selected = tripStatus == st,
-                onClick = { tripStatus = st },
-                label = { Text(st, fontSize = 11.sp) }
-              )
-            }
-          }
-        }
-      }
+      FormFieldInput(
+        value = distanceText,
+        onValueChange = { distanceText = it },
+        label = "Est. Distance (km)",
+        placeholder = "e.g., 140",
+        icon = Icons.Default.Speed,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
     }
 
-    // Section 3: Fleet Vehicle & Driver Assignment
+    // Section 3: Driver Detail Section & Fleet Category Select Dropdown (Quick Assign Removed)
     FormSectionCard(
       stepNumber = "3",
-      sectionTitle = "Fleet Category, Vehicle & Driver Assignment",
+      sectionTitle = "Driver Details & Fleet Category",
       accentColor = KpiPurpleIcon
     ) {
-      Text("Select Fleet Category", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        VEHICLE_CATEGORIES.forEach { cat ->
-          FilterChip(
-            selected = category == cat,
-            onClick = { category = cat },
-            label = { Text(cat, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
-            colors = FilterChipDefaults.filterChipColors(
-              selectedContainerColor = KpiPurpleBg,
-              selectedLabelColor = KpiPurpleIcon
-            )
-          )
-        }
-      }
-
-      if (availableDrivers.isNotEmpty()) {
-        Text("Quick-Assign Driver from Roster:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          availableDrivers.take(5).forEach { drv ->
-            FilterChip(
-              selected = driverName == drv.name,
-              onClick = {
-                driverName = drv.name
-                category = drv.vehicleCategory
-                val plate = drv.assignedVehicle.substringAfter("(", "").substringBefore(")")
-                if (plate.isNotBlank()) {
-                  vehicleNumber = plate
-                }
-              },
-              label = { Text(drv.name, fontSize = 11.sp) }
-            )
-          }
-        }
-      }
-
-      if (availableVehicles.isNotEmpty()) {
-        Text("Quick-Assign Fleet Vehicle:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          availableVehicles.take(4).forEach { veh ->
-            FilterChip(
-              selected = vehicleNumber == veh.registrationNumber,
-              onClick = {
-                vehicleNumber = veh.registrationNumber
-                category = veh.category
-              },
-              label = { Text("${veh.registrationNumber} (${veh.modelName.take(12)})", fontSize = 11.sp) }
-            )
-          }
-        }
-      }
+      FormSelectDropdown(
+        selectedValue = category,
+        options = VEHICLE_CATEGORIES,
+        onValueSelected = { category = it },
+        label = "Select Fleet Category",
+        icon = Icons.Default.DirectionsCar,
+        modifier = Modifier.fillMaxWidth(),
+        testTagName = "select_fleet_category"
+      )
 
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         FormFieldInput(
           value = driverName,
           onValueChange = { driverName = it },
-          label = "Assigned Driver Name",
+          label = "Driver Name",
           placeholder = "e.g., Ramesh Kumar",
           icon = Icons.Default.Badge,
           modifier = Modifier.weight(1f)
         )
         FormFieldInput(
-          value = vehicleNumber,
-          onValueChange = { vehicleNumber = it.uppercase() },
-          label = "Vehicle Number Plate",
-          placeholder = "e.g., KA-01-MG-4590",
-          icon = Icons.Default.DirectionsCar,
+          value = driverPhone,
+          onValueChange = { driverPhone = it },
+          label = "Driver Phone Number",
+          placeholder = "+91 98450 11223",
+          icon = Icons.Default.Phone,
           modifier = Modifier.weight(1f)
         )
       }
+
+      FormFieldInput(
+        value = vehicleNumber,
+        onValueChange = { vehicleNumber = it.uppercase() },
+        label = "Vehicle Number Plate",
+        placeholder = "e.g., KA-01-MG-4590",
+        icon = Icons.Default.DirectionsCar,
+        modifier = Modifier.fillMaxWidth()
+      )
     }
 
-    // Section 4: Tariff, Toll & Parking Charges, and Optional GST
+    // Section 4: Base Fare, Toll & Parking Charges, Optional GST & Payment Select Dropdowns (Internal Trip Expenses Removed)
     FormSectionCard(
       stepNumber = "4",
-      sectionTitle = "Base Fare, Toll & Parking Charges, and Optional GST",
+      sectionTitle = "Fare, Toll & Parking Charges, Optional GST & Payment",
       accentColor = KpiGreenIcon
     ) {
-      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormFieldInput(
-          value = baseAmountText,
-          onValueChange = { baseAmountText = it },
-          label = "Base Fare Amount (₹)",
-          placeholder = "e.g., 6500",
-          icon = Icons.Default.CurrencyRupee,
-          isNumeric = true,
-          modifier = Modifier.weight(1f)
-        )
-        FormFieldInput(
-          value = expenseAmountText,
-          onValueChange = { expenseAmountText = it },
-          label = "Internal Trip Expenses (₹)",
-          placeholder = "e.g., 1200",
-          icon = Icons.Default.LocalGasStation,
-          isNumeric = true,
-          modifier = Modifier.weight(1f)
-        )
-      }
+      FormFieldInput(
+        value = baseAmountText,
+        onValueChange = { baseAmountText = it },
+        label = "Base Fare Amount (₹)",
+        placeholder = "e.g., 6500",
+        icon = Icons.Default.CurrencyRupee,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
 
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         FormFieldInput(
@@ -805,34 +887,29 @@ fun NewBookingDialog(
         }
       }
 
-      Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-          Text("Payment Status", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-          Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            PAYMENT_STATUSES.forEach { st ->
-              FilterChip(
-                selected = paymentStatus == st,
-                onClick = { paymentStatus = st },
-                label = { Text(st, fontSize = 11.sp) }
-              )
-            }
-          }
-        }
-        Column(modifier = Modifier.weight(1.4f)) {
-          Text("Payment Channel", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-          FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            PAYMENT_CHANNELS.forEach { ch ->
-              FilterChip(
-                selected = paymentChannel == ch,
-                onClick = { paymentChannel = ch },
-                label = { Text(ch, fontSize = 11.sp) }
-              )
-            }
-          }
-        }
+      // Select Dropdowns for Payment Status and Payment Channel
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormSelectDropdown(
+          selectedValue = paymentStatus,
+          options = PAYMENT_STATUSES,
+          onValueSelected = { paymentStatus = it },
+          label = "Select Payment Status",
+          icon = Icons.Default.ReceiptLong,
+          modifier = Modifier.weight(1f),
+          testTagName = "select_payment_status"
+        )
+        FormSelectDropdown(
+          selectedValue = paymentChannel,
+          options = PAYMENT_CHANNELS,
+          onValueSelected = { paymentChannel = it },
+          label = "Select Payment Channel",
+          icon = Icons.Default.Payment,
+          modifier = Modifier.weight(1f),
+          testTagName = "select_payment_channel"
+        )
       }
 
-      // Live Invoice & Margin Summary Card
+      // Live Invoice Breakdown Preview Card (Internal Trip Expenses Removed)
       Surface(
         color = KpiGreenBg,
         shape = RoundedCornerShape(12.dp),
@@ -860,9 +937,9 @@ fun NewBookingDialog(
             )
             Text(
               text = if (includeOptionalGst) {
-                "Optional GST ($selectedGstSlab%): ${formatInr(liveGst)} • Net Profit: ${formatInr(liveNetMargin)}"
+                "Optional GST ($selectedGstSlab%): ${formatInr(liveGst)}"
               } else {
-                "GST: ₹0 (Not Applied) • Net Profit: ${formatInr(liveNetMargin)}"
+                "GST: ₹0 (Not Applied)"
               },
               fontSize = 11.sp,
               fontWeight = FontWeight.SemiBold,
@@ -917,19 +994,9 @@ fun AddDriverDialog(
     badgeBg = KpiPurpleBg,
     badgeFg = KpiPurpleIcon,
     title = if (isEditMode) "Edit Driver Roster Profile" else "Add Commercial Driver to Roster",
-    subtitle = "Enter commercial badge details, mobile contact, assigned fleet vehicle, and duty status.",
+    subtitle = "Enter commercial badge details, driver phone number, assigned fleet vehicle, and duty status.",
     primaryButtonText = if (isEditMode) "Update Driver" else "Save Driver to Roster",
     primaryButtonColor = SidebarActiveBlue,
-    onQuickFillSample = {
-      name = "Manjunath Naik"
-      phone = "+91 98450 55667"
-      license = "KA01-2020-0054120"
-      vehicle = "Toyota Innova Crysta (KA-01-MG-4590)"
-      category = "SUVs"
-      status = "Available"
-      tripsText = "24"
-      earningsText = "38500"
-    },
     onClearFields = {
       name = ""
       phone = ""
@@ -970,7 +1037,7 @@ fun AddDriverDialog(
         FormFieldInput(
           value = phone,
           onValueChange = { phone = it },
-          label = "Driver Mobile Number",
+          label = "Driver Phone Number",
           placeholder = "+91 98450 55667",
           icon = Icons.Default.Phone,
           modifier = Modifier.weight(1f)
@@ -991,23 +1058,6 @@ fun AddDriverDialog(
       sectionTitle = "Fleet Vehicle Assignment & Duty Status",
       accentColor = SidebarActiveBlue
     ) {
-      if (availableVehicles.isNotEmpty()) {
-        Text("Quick-Pick from Registered Fleet Vehicles:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          availableVehicles.take(4).forEach { v ->
-            val label = "${v.modelName} (${v.registrationNumber})"
-            FilterChip(
-              selected = vehicle == label,
-              onClick = {
-                vehicle = label
-                category = v.category
-              },
-              label = { Text(v.registrationNumber, fontSize = 11.sp) }
-            )
-          }
-        }
-      }
-
       FormFieldInput(
         value = vehicle,
         onValueChange = { vehicle = it },
@@ -1017,26 +1067,23 @@ fun AddDriverDialog(
         modifier = Modifier.fillMaxWidth()
       )
 
-      Text("Vehicle Category", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        VEHICLE_CATEGORIES.forEach { cat ->
-          FilterChip(
-            selected = category == cat,
-            onClick = { category = cat },
-            label = { Text(cat, fontSize = 11.sp) }
-          )
-        }
-      }
-
-      Text("Current Duty Status", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        DRIVER_STATUSES.forEach { st ->
-          FilterChip(
-            selected = status == st,
-            onClick = { status = st },
-            label = { Text(st, fontSize = 11.sp) }
-          )
-        }
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormSelectDropdown(
+          selectedValue = category,
+          options = VEHICLE_CATEGORIES,
+          onValueSelected = { category = it },
+          label = "Select Fleet Category",
+          icon = Icons.Default.DirectionsCar,
+          modifier = Modifier.weight(1f)
+        )
+        FormSelectDropdown(
+          selectedValue = status,
+          options = DRIVER_STATUSES,
+          onValueSelected = { status = it },
+          label = "Select Duty Status",
+          icon = Icons.Default.Badge,
+          modifier = Modifier.weight(1f)
+        )
       }
     }
 
@@ -1074,42 +1121,91 @@ fun AddDriverDialog(
 fun AddVehicleDialog(
   initialVehicle: Vehicle? = null,
   onDismiss: () -> Unit,
-  onConfirm: (String, String, String, String, Long, String, String) -> Unit,
+  onConfirm: (
+    registrationNumber: String,
+    modelName: String,
+    manufacturingYear: String,
+    category: String,
+    status: String,
+    maintenanceCost: Long,
+    serviceDate: String,
+    nextServiceDate: String,
+    serviceKilometers: Long,
+    presentRunningKilometers: Long,
+    nextServiceKilometers: Long,
+    insuranceDetails: String,
+    fitnessDetails: String,
+    pollutionDetails: String,
+    serviceNotes: String,
+  ) -> Unit,
 ) {
   val isEditMode = initialVehicle != null
-  var regNo by remember(initialVehicle) { mutableStateOf(initialVehicle?.registrationNumber ?: "") }
+  var selectedTab by remember { mutableStateOf(0) } // 0 = Add Vehicle Section, 1 = Workshop Maintenance
+
   var model by remember(initialVehicle) { mutableStateOf(initialVehicle?.modelName ?: "") }
+  var regNo by remember(initialVehicle) { mutableStateOf(initialVehicle?.registrationNumber ?: "") }
+  var manufacturingYear by remember(initialVehicle) {
+    mutableStateOf(initialVehicle?.manufacturingYear?.ifBlank { "2024" } ?: "2024")
+  }
   var category by remember(initialVehicle) { mutableStateOf(initialVehicle?.category ?: "SUVs") }
-  var status by remember(initialVehicle) { mutableStateOf(initialVehicle?.status ?: "Available") }
+  val status = initialVehicle?.status ?: "Available"
+
+  var serviceDate by remember(initialVehicle) {
+    val raw = initialVehicle?.serviceDate?.ifBlank { "12-11-2026" } ?: "12-11-2026"
+    mutableStateOf(formatToDdMmYyyy(raw))
+  }
+  var nextServiceDate by remember(initialVehicle) {
+    val raw = initialVehicle?.nextServiceDate?.ifBlank { "28-12-2026" } ?: "28-12-2026"
+    mutableStateOf(formatToDdMmYyyy(raw))
+  }
+  var serviceKmText by remember(initialVehicle) {
+    mutableStateOf(
+      if (initialVehicle != null && initialVehicle.serviceKilometers > 0L)
+        initialVehicle.serviceKilometers.toString()
+      else ""
+    )
+  }
+  var presentRunningKmText by remember(initialVehicle) {
+    mutableStateOf(
+      if (initialVehicle != null && initialVehicle.presentRunningKilometers > 0L)
+        initialVehicle.presentRunningKilometers.toString()
+      else ""
+    )
+  }
+  var nextServiceKmText by remember(initialVehicle) {
+    mutableStateOf(
+      if (initialVehicle != null && initialVehicle.nextServiceKilometers > 0L)
+        initialVehicle.nextServiceKilometers.toString()
+      else ""
+    )
+  }
   var costText by remember(initialVehicle) {
     mutableStateOf(if (initialVehicle != null) initialVehicle.maintenanceCost.toString() else "")
   }
-  var nextServiceDate by remember(initialVehicle) {
-    mutableStateOf(initialVehicle?.nextServiceDate?.ifBlank { "2026-12-28" } ?: "2026-12-28")
-  }
+  var insuranceDetails by remember(initialVehicle) { mutableStateOf(initialVehicle?.insuranceDetails ?: "") }
+  var fitnessDetails by remember(initialVehicle) { mutableStateOf(initialVehicle?.fitnessDetails ?: "") }
+  var pollutionDetails by remember(initialVehicle) { mutableStateOf(initialVehicle?.pollutionDetails ?: "") }
   var notes by remember(initialVehicle) { mutableStateOf(initialVehicle?.serviceNotes ?: "") }
 
   CrmFormModalShell(
-    badgeText = if (isEditMode) "UPDATE FLEET VEHICLE" else "FLEET & MAINTENANCE ENTRY",
+    badgeText = if (isEditMode) "UPDATE FLEET VEHICLE" else "VEHICLES MAINTENANCE",
     badgeBg = KpiOrangeBg,
     badgeFg = KpiOrangeIcon,
-    title = if (isEditMode) "Edit Vehicle & Maintenance Log" else "Register Fleet Vehicle & Maintenance",
-    subtitle = "Record vehicle registration plate, fleet category, workshop spend (for 18% GST ITC), and service schedule.",
-    primaryButtonText = if (isEditMode) "Update Vehicle" else "Add Vehicle to Fleet",
+    title = if (isEditMode) "Edit Vehicle & Workshop Maintenance" else "Add Vehicle & Workshop Maintenance",
+    subtitle = "Switch between Add Vehicle Section and Workshop Maintenance tabs below.",
+    primaryButtonText = if (isEditMode) "Update Vehicle" else "Save Vehicle & Maintenance",
     primaryButtonColor = SidebarActiveBlue,
-    onQuickFillSample = {
-      regNo = "KA-01-AB-7788"
-      model = "Toyota Innova Hycross ZX Hybrid"
-      category = "SUVs"
-      status = "Available"
-      costText = "8500"
-      nextServiceDate = "2026-12-28"
-      notes = "40,000 km synthetic oil service, brake pad replacement & wheel alignment"
-    },
     onClearFields = {
-      regNo = ""
       model = ""
+      regNo = ""
+      manufacturingYear = ""
+      serviceKmText = ""
+      presentRunningKmText = ""
+      nextServiceKmText = ""
       costText = ""
+      insuranceDetails = ""
+      fitnessDetails = ""
+      pollutionDetails = ""
       notes = ""
     },
     onDismiss = onDismiss,
@@ -1117,95 +1213,206 @@ fun AddVehicleDialog(
       onConfirm(
         regNo.ifBlank { "KA-01-AB-7788" },
         model.ifBlank { "Toyota Innova Hycross ZX" },
+        manufacturingYear.ifBlank { "2024" },
         category,
         status,
         costText.toLongOrNull() ?: 5000L,
-        nextServiceDate.ifBlank { "2026-12-28" },
+        formatToDdMmYyyy(serviceDate.ifBlank { "12-11-2026" }),
+        formatToDdMmYyyy(nextServiceDate.ifBlank { "28-12-2026" }),
+        serviceKmText.toLongOrNull() ?: 40000L,
+        presentRunningKmText.toLongOrNull() ?: 44500L,
+        nextServiceKmText.toLongOrNull() ?: 50000L,
+        insuranceDetails.ifBlank { "Comprehensive Active" },
+        fitnessDetails.ifBlank { "FC Valid" },
+        pollutionDetails.ifBlank { "PUC Valid" },
         notes.ifBlank { "Full synthetic service & brake inspection" }
       )
       onDismiss()
     }
   ) {
-    FormSectionCard(
-      stepNumber = "1",
-      sectionTitle = "Vehicle Registration & Fleet Classification",
-      accentColor = KpiOrangeIcon
+    // Tabs selector: Add Vehicle Section | Workshop Maintenance
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(12.dp))
+        .background(CanvasBackground)
+        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+        .padding(4.dp),
+      horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormFieldInput(
-          value = regNo,
-          onValueChange = { regNo = it.uppercase() },
-          label = "Registration Number Plate",
-          placeholder = "e.g., KA-01-AB-7788",
-          icon = Icons.Default.DirectionsCar,
-          modifier = Modifier.weight(1f)
-        )
-        FormFieldInput(
-          value = model,
-          onValueChange = { model = it },
-          label = "Vehicle Make & Model",
-          placeholder = "e.g., Toyota Innova Hycross",
-          icon = Icons.Default.Badge,
-          modifier = Modifier.weight(1.2f)
-        )
-      }
-
-      Text("Fleet Category", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        VEHICLE_CATEGORIES.forEach { cat ->
-          FilterChip(
-            selected = category == cat,
-            onClick = { category = cat },
-            label = { Text(cat, fontSize = 11.sp) }
-          )
-        }
-      }
-
-      Text("Operational Status", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        VEHICLE_STATUSES.forEach { st ->
-          FilterChip(
-            selected = status == st,
-            onClick = { status = st },
-            label = { Text(st, fontSize = 11.sp) }
-          )
+      val tabs = listOf("Add Vehicle Section", "Workshop Maintenance")
+      tabs.forEachIndexed { index, tabTitle ->
+        val isSelected = selectedTab == index
+        Surface(
+          color = if (isSelected) SidebarActiveBlue else Color.Transparent,
+          shape = RoundedCornerShape(9.dp),
+          modifier = Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(9.dp))
+            .clickable { selectedTab = index }
+            .testTag("vehicle_dialog_tab_$index")
+        ) {
+          Box(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = tabTitle,
+              fontSize = 12.sp,
+              fontWeight = FontWeight.ExtraBold,
+              color = if (isSelected) Color.White else TextPrimaryDark
+            )
+          }
         }
       }
     }
 
-    FormSectionCard(
-      stepNumber = "2",
-      sectionTitle = "Workshop Maintenance Spend & Next Service Schedule",
-      accentColor = SidebarActiveBlue
-    ) {
-      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    if (selectedTab == 0) {
+      FormSectionCard(
+        stepNumber = "1",
+        sectionTitle = "Add Vehicle Section",
+        accentColor = KpiOrangeIcon
+      ) {
         FormFieldInput(
-          value = costText,
-          onValueChange = { costText = it },
-          label = "Maintenance Cost (₹)",
-          placeholder = "e.g., 8500",
-          icon = Icons.Default.CurrencyRupee,
-          isNumeric = true,
-          modifier = Modifier.weight(1f)
+          value = model,
+          onValueChange = { model = it },
+          label = "Vehicle Name, Make and Model",
+          placeholder = "e.g., Toyota Innova Hycross ZX",
+          icon = Icons.Default.DirectionsCar,
+          modifier = Modifier.fillMaxWidth()
         )
-        FormFieldInput(
-          value = nextServiceDate,
-          onValueChange = { nextServiceDate = it },
-          label = "Next Service Due (YYYY-MM-DD)",
-          placeholder = "2026-12-28",
-          icon = Icons.Default.CalendarToday,
-          modifier = Modifier.weight(1f)
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          FormFieldInput(
+            value = regNo,
+            onValueChange = { regNo = it.uppercase() },
+            label = "Registration Number Plate",
+            placeholder = "e.g., KA-01-AB-7788",
+            icon = Icons.Default.Badge,
+            modifier = Modifier.weight(1f)
+          )
+          FormFieldInput(
+            value = manufacturingYear,
+            onValueChange = { manufacturingYear = it },
+            label = "Manufacturing Year",
+            placeholder = "e.g., 2024",
+            icon = Icons.Default.CalendarMonth,
+            isNumeric = true,
+            modifier = Modifier.weight(1f)
+          )
+        }
+
+        FormSelectDropdown(
+          selectedValue = category,
+          options = VEHICLE_CATEGORIES,
+          onValueSelected = { category = it },
+          label = "Select Fleet Category",
+          icon = Icons.Default.DirectionsCar,
+          modifier = Modifier.fillMaxWidth(),
+          testTagName = "vehicle_select_fleet_category"
         )
       }
-      FormFieldInput(
-        value = notes,
-        onValueChange = { notes = it },
-        label = "Workshop Service & Inspection Notes",
-        placeholder = "e.g., Full synthetic oil change, AC filter & brake inspection",
-        icon = Icons.Default.Build,
-        singleLine = false,
-        modifier = Modifier.fillMaxWidth()
-      )
+    } else {
+      FormSectionCard(
+        stepNumber = "2",
+        sectionTitle = "Workshop Maintenance",
+        accentColor = SidebarActiveBlue
+      ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          FormCalendarDateField(
+            dateValue = serviceDate,
+            onDateChange = { serviceDate = it },
+            label = "Service Date (DD-MM-YYYY)",
+            modifier = Modifier.weight(1f)
+          )
+          FormCalendarDateField(
+            dateValue = nextServiceDate,
+            onDateChange = { nextServiceDate = it },
+            label = "Next Service Due (DD-MM-YYYY)",
+            modifier = Modifier.weight(1f)
+          )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          FormFieldInput(
+            value = serviceKmText,
+            onValueChange = { serviceKmText = it },
+            label = "Service Kilometers (km)",
+            placeholder = "e.g., 40000",
+            icon = Icons.Default.Speed,
+            isNumeric = true,
+            modifier = Modifier.weight(1f)
+          )
+          FormFieldInput(
+            value = presentRunningKmText,
+            onValueChange = { presentRunningKmText = it },
+            label = "Present Running Kilometers (km)",
+            placeholder = "e.g., 44500",
+            icon = Icons.Default.Speed,
+            isNumeric = true,
+            modifier = Modifier.weight(1f)
+          )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          FormFieldInput(
+            value = nextServiceKmText,
+            onValueChange = { nextServiceKmText = it },
+            label = "Next Service Kilometers (km)",
+            placeholder = "e.g., 50000",
+            icon = Icons.Default.Speed,
+            isNumeric = true,
+            modifier = Modifier.weight(1f)
+          )
+          FormFieldInput(
+            value = costText,
+            onValueChange = { costText = it },
+            label = "Maintenance Cost (₹)",
+            placeholder = "e.g., 8500",
+            icon = Icons.Default.CurrencyRupee,
+            isNumeric = true,
+            modifier = Modifier.weight(1f)
+          )
+        }
+
+        FormFieldInput(
+          value = insuranceDetails,
+          onValueChange = { insuranceDetails = it },
+          label = "Insurance Details",
+          placeholder = "e.g., ICICI Lombard Comprehensive Valid till 15-11-2027",
+          icon = Icons.Default.ReceiptLong,
+          modifier = Modifier.fillMaxWidth()
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          FormFieldInput(
+            value = fitnessDetails,
+            onValueChange = { fitnessDetails = it },
+            label = "Fitness Details",
+            placeholder = "e.g., RTO FC Valid till 2028",
+            icon = Icons.Default.Badge,
+            modifier = Modifier.weight(1f)
+          )
+          FormFieldInput(
+            value = pollutionDetails,
+            onValueChange = { pollutionDetails = it },
+            label = "Pollution Details",
+            placeholder = "e.g., PUC Valid till 06-2027",
+            icon = Icons.Default.Build,
+            modifier = Modifier.weight(1f)
+          )
+        }
+
+        FormFieldInput(
+          value = notes,
+          onValueChange = { notes = it },
+          label = "Next Service Notes",
+          placeholder = "e.g., Full synthetic oil change, AC filter & brake pad inspection",
+          icon = Icons.Default.Build,
+          singleLine = false,
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
     }
   }
 }
@@ -1235,6 +1442,10 @@ fun AddLeadDialog(
   }
   var source by remember(initialLead) { mutableStateOf(initialLead?.source ?: "Direct Inquiry") }
   var status by remember(initialLead) { mutableStateOf(initialLead?.status ?: "New") }
+  var followUpDate by remember {
+    val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.US)
+    mutableStateOf(sdf.format(Date()))
+  }
 
   CrmFormModalShell(
     badgeText = if (isEditMode) "UPDATE TRAVEL LEAD" else "TRAVEL LEAD & QUOTATION",
@@ -1244,15 +1455,6 @@ fun AddLeadDialog(
     subtitle = "Capture prospective customer details, tour itinerary, preferred fleet category, and package quote.",
     primaryButtonText = if (isEditMode) "Update Lead" else "Save Lead to Pipeline",
     primaryButtonColor = SidebarActiveBlue,
-    onQuickFillSample = {
-      name = "Arjun Reddy"
-      phone = "+91 99801 22334"
-      route = "Bengaluru to Coorg 3-Day Outstation Package"
-      category = "Compact SUVs"
-      quoteText = "14500"
-      source = "WhatsApp"
-      status = "Quoted"
-    },
     onClearFields = {
       name = ""
       phone = ""
@@ -1275,14 +1477,14 @@ fun AddLeadDialog(
   ) {
     FormSectionCard(
       stepNumber = "1",
-      sectionTitle = "Prospective Traveler & Inquiry Source",
+      sectionTitle = "Prospective Traveler & Inquiry Date",
       accentColor = SidebarActiveBlue
     ) {
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         FormFieldInput(
           value = name,
           onValueChange = { name = it },
-          label = "Prospective Client Name",
+          label = "Customer Name",
           placeholder = "e.g., Arjun Reddy",
           icon = Icons.Default.Person,
           modifier = Modifier.weight(1f)
@@ -1290,22 +1492,28 @@ fun AddLeadDialog(
         FormFieldInput(
           value = phone,
           onValueChange = { phone = it },
-          label = "Client Mobile Number",
+          label = "Customer Mobile Number",
           placeholder = "+91 99801 22334",
           icon = Icons.Default.Phone,
           modifier = Modifier.weight(1f)
         )
       }
 
-      Text("Lead Acquisition Channel", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        LEAD_SOURCES.forEach { src ->
-          FilterChip(
-            selected = source == src,
-            onClick = { source = src },
-            label = { Text(src, fontSize = 11.sp) }
-          )
-        }
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormSelectDropdown(
+          selectedValue = source,
+          options = LEAD_SOURCES,
+          onValueSelected = { source = it },
+          label = "Select Lead Source",
+          icon = Icons.Default.Business,
+          modifier = Modifier.weight(1f)
+        )
+        FormCalendarDateField(
+          dateValue = followUpDate,
+          onDateChange = { followUpDate = it },
+          label = "Travel Date (DD-MM-YYYY)",
+          modifier = Modifier.weight(1.1f)
+        )
       }
     }
 
@@ -1323,44 +1531,34 @@ fun AddLeadDialog(
         modifier = Modifier.fillMaxWidth()
       )
 
-      Text("Preferred Fleet Category", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        VEHICLE_CATEGORIES.forEach { cat ->
-          FilterChip(
-            selected = category == cat,
-            onClick = { category = cat },
-            label = { Text(cat, fontSize = 11.sp) }
-          )
-        }
-      }
-
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        FormFieldInput(
-          value = quoteText,
-          onValueChange = { quoteText = it },
-          label = "Quoted Package Price (₹)",
-          placeholder = "e.g., 14500",
-          icon = Icons.Default.CurrencyRupee,
-          isNumeric = true,
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormSelectDropdown(
+          selectedValue = category,
+          options = VEHICLE_CATEGORIES,
+          onValueSelected = { category = it },
+          label = "Select Fleet Category",
+          icon = Icons.Default.DirectionsCar,
           modifier = Modifier.weight(1f)
         )
-        Column(modifier = Modifier.weight(1.2f)) {
-          Text("Pipeline Stage", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-          FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            LEAD_STATUSES.forEach { st ->
-              FilterChip(
-                selected = status == st,
-                onClick = { status = st },
-                label = { Text(st, fontSize = 11.sp) }
-              )
-            }
-          }
-        }
+        FormSelectDropdown(
+          selectedValue = status,
+          options = LEAD_STATUSES,
+          onValueSelected = { status = it },
+          label = "Select Lead Status",
+          icon = Icons.Default.ReceiptLong,
+          modifier = Modifier.weight(1f)
+        )
       }
+
+      FormFieldInput(
+        value = quoteText,
+        onValueChange = { quoteText = it },
+        label = "Quoted Package Price (₹)",
+        placeholder = "e.g., 14500",
+        icon = Icons.Default.CurrencyRupee,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
     }
   }
 }
@@ -1371,6 +1569,7 @@ fun AddCustomerDialog(
   onDismiss: () -> Unit,
   onConfirm: (
     name: String,
+    address: String,
     phone: String,
     email: String,
     companyName: String,
@@ -1381,175 +1580,90 @@ fun AddCustomerDialog(
   ) -> Unit,
 ) {
   val isEditMode = initialCustomer != null
-  var company by remember(initialCustomer) { mutableStateOf(initialCustomer?.companyName ?: "") }
-  var contact by remember(initialCustomer) { mutableStateOf(initialCustomer?.name ?: "") }
+  var customerName by remember(initialCustomer) { mutableStateOf(initialCustomer?.name ?: "") }
+  var address by remember(initialCustomer) {
+    mutableStateOf(
+      initialCustomer?.address?.ifBlank { initialCustomer.companyName } ?: ""
+    )
+  }
   var phone by remember(initialCustomer) { mutableStateOf(initialCustomer?.phone ?: "") }
-  var email by remember(initialCustomer) { mutableStateOf(initialCustomer?.email ?: "") }
-  var gstin by remember(initialCustomer) { mutableStateOf(initialCustomer?.gstin ?: "") }
   var bookingsCountText by remember(initialCustomer) {
     mutableStateOf(if (initialCustomer != null) initialCustomer.totalBookings.toString() else "1")
   }
-  var billedText by remember(initialCustomer) {
-    mutableStateOf(if (initialCustomer != null) initialCustomer.totalBilled.toString() else "")
-  }
-  var pendingText by remember(initialCustomer) {
-    mutableStateOf(if (initialCustomer != null) initialCustomer.pendingBalance.toString() else "")
-  }
-
-  val liveBilled = billedText.toLongOrNull() ?: 0L
-  val livePending = pendingText.toLongOrNull() ?: 0L
-  val liveRealized = (liveBilled - livePending).coerceAtLeast(0L)
 
   CrmFormModalShell(
-    badgeText = if (isEditMode) "UPDATE CORPORATE ACCOUNT" else "CORPORATE & RETAIL ACCOUNT",
+    badgeText = if (isEditMode) "UPDATE CUSTOMER DATA" else "CUSTOMER DATA ENTRY",
     badgeBg = KpiTealBg,
     badgeFg = KpiTealIcon,
-    title = if (isEditMode) "Edit Customer & GST Account" else "Register Corporate / Retail Account",
-    subtitle = "Maintain B2B corporate travel accounts, GSTIN tax identifiers, and credit receivable balances.",
-    primaryButtonText = if (isEditMode) "Update Account" else "Save Customer Account",
+    title = if (isEditMode) "Edit Customer Details" else "Add Customer Details",
+    subtitle = "Save customer name, address, mobile number, and total trips.",
+    primaryButtonText = if (isEditMode) "Update Customer" else "Save Customer",
     primaryButtonColor = SidebarActiveBlue,
-    onQuickFillSample = {
-      company = "Synergy Tech India Pvt Ltd"
-      contact = "Neha Gupta (Travel Desk)"
-      phone = "+91 98201 44556"
-      email = "traveldesk@synergytech.in"
-      gstin = "29AABCC4512N1Z9"
-      bookingsCountText = "6"
-      billedText = "68000"
-      pendingText = "12000"
-    },
     onClearFields = {
-      company = ""
-      contact = ""
+      customerName = ""
+      address = ""
       phone = ""
-      email = ""
-      gstin = ""
       bookingsCountText = "1"
-      billedText = ""
-      pendingText = ""
     },
     onDismiss = onDismiss,
     onConfirm = {
+      val cleanName = customerName.ifBlank { "Rajesh Sharma" }
+      val cleanAddress = address.ifBlank { "Bengaluru, Karnataka" }
       onConfirm(
-        contact.ifBlank { "Neha Gupta" },
-        phone.ifBlank { "+91 98201 44556" },
-        email.ifBlank { "accounts@corporate.in" },
-        company.ifBlank { "Synergy Tech India Ltd" },
-        gstin.ifBlank { "29AABCC4512N1Z9" },
+        cleanName,
+        cleanAddress,
+        phone.ifBlank { "+91 98450 11223" },
+        initialCustomer?.email ?: "",
+        initialCustomer?.companyName?.ifBlank { cleanAddress } ?: cleanAddress,
+        initialCustomer?.gstin ?: "",
         bookingsCountText.toLongOrNull() ?: 1L,
-        billedText.toLongOrNull() ?: 45000L,
-        pendingText.toLongOrNull() ?: 0L
+        initialCustomer?.totalBilled ?: 0L,
+        initialCustomer?.pendingBalance ?: 0L
       )
       onDismiss()
     }
   ) {
     FormSectionCard(
       stepNumber = "1",
-      sectionTitle = "Company Identity & GSTIN Tax Registration",
+      sectionTitle = "Customer Details (Saved from Booking History)",
       accentColor = KpiTealIcon
     ) {
       FormFieldInput(
-        value = company,
-        onValueChange = { company = it },
-        label = "Corporate / Company / Account Name",
-        placeholder = "e.g., Synergy Tech India Pvt Ltd",
-        icon = Icons.Default.Business,
+        value = customerName,
+        onValueChange = { customerName = it },
+        label = "Customer Name",
+        placeholder = "e.g., Rajesh Sharma",
+        icon = Icons.Default.Person,
         modifier = Modifier.fillMaxWidth()
       )
+
+      FormFieldInput(
+        value = address,
+        onValueChange = { address = it },
+        label = "Address",
+        placeholder = "e.g., Whitefield Tech Park, Bengaluru",
+        icon = Icons.Default.LocationOn,
+        modifier = Modifier.fillMaxWidth()
+      )
+
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         FormFieldInput(
-          value = gstin,
-          onValueChange = { gstin = it.uppercase() },
-          label = "15-Digit Customer GSTIN",
-          placeholder = "29AABCC4512N1Z9",
-          icon = Icons.Default.ReceiptLong,
+          value = phone,
+          onValueChange = { phone = it },
+          label = "Mobile Number",
+          placeholder = "+91 98450 11223",
+          icon = Icons.Default.Phone,
           modifier = Modifier.weight(1.2f)
         )
         FormFieldInput(
           value = bookingsCountText,
           onValueChange = { bookingsCountText = it },
           label = "Total Trips",
-          placeholder = "e.g., 5",
+          placeholder = "e.g., 3",
           icon = Icons.Default.Route,
           isNumeric = true,
           modifier = Modifier.weight(0.8f)
         )
-      }
-    }
-
-    FormSectionCard(
-      stepNumber = "2",
-      sectionTitle = "Primary Contact Person & Billing Email",
-      accentColor = SidebarActiveBlue
-    ) {
-      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormFieldInput(
-          value = contact,
-          onValueChange = { contact = it },
-          label = "Contact Person Name",
-          placeholder = "e.g., Neha Gupta",
-          icon = Icons.Default.Person,
-          modifier = Modifier.weight(1f)
-        )
-        FormFieldInput(
-          value = phone,
-          onValueChange = { phone = it },
-          label = "Mobile / Desk Phone",
-          placeholder = "+91 98201 44556",
-          icon = Icons.Default.Phone,
-          modifier = Modifier.weight(1f)
-        )
-      }
-      FormFieldInput(
-        value = email,
-        onValueChange = { email = it },
-        label = "Billing & E-Invoice Email",
-        placeholder = "e.g., billing@synergytech.in",
-        icon = Icons.Default.Email,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }
-
-    FormSectionCard(
-      stepNumber = "3",
-      sectionTitle = "Account Ledger & Credit Receivables",
-      accentColor = KpiAmberIcon
-    ) {
-      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormFieldInput(
-          value = billedText,
-          onValueChange = { billedText = it },
-          label = "Total Billed Amount (₹)",
-          placeholder = "e.g., 68000",
-          icon = Icons.Default.CurrencyRupee,
-          isNumeric = true,
-          modifier = Modifier.weight(1f)
-        )
-        FormFieldInput(
-          value = pendingText,
-          onValueChange = { pendingText = it },
-          label = "Pending Receivable Due (₹)",
-          placeholder = "e.g., 12000",
-          icon = Icons.Default.AccountBalanceWallet,
-          isNumeric = true,
-          modifier = Modifier.weight(1f)
-        )
-      }
-
-      Surface(
-        color = KpiBlueBg,
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-          horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-          Text("Realized Paid Amount:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimaryDark)
-          Text(formatInr(liveRealized), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = KpiGreenIcon)
-        }
       }
     }
   }
@@ -1571,6 +1685,7 @@ fun TripExpenseEntryDialog(
   var driverBataText by remember(booking) { mutableStateOf(initialBata.toString()) }
   var permitParkingText by remember(booking) { mutableStateOf(initialPermit.toString()) }
   var odometerKmText by remember(booking) { mutableStateOf(booking.distanceKm.toString()) }
+  var expenseDate by remember(booking) { mutableStateOf(formatToDdMmYyyy(booking.tripDate)) }
 
   val totalExpense = (fuelText.toLongOrNull() ?: 0L) +
     (tollText.toLongOrNull() ?: 0L) +
@@ -1586,13 +1701,6 @@ fun TripExpenseEntryDialog(
     subtitle = "${booking.customerName} • ${booking.pickupLocation} → ${booking.dropLocation}",
     primaryButtonText = "Save Expense Breakdown",
     primaryButtonColor = NewBookingGreen,
-    onQuickFillSample = {
-      fuelText = "950"
-      tollText = "320"
-      driverBataText = "400"
-      permitParkingText = "150"
-      odometerKmText = "165"
-    },
     onClearFields = {
       fuelText = "0"
       tollText = "0"
@@ -1613,6 +1721,12 @@ fun TripExpenseEntryDialog(
       sectionTitle = "Itemized Trip Operating Expenses (₹)",
       accentColor = KpiOrangeIcon
     ) {
+      FormCalendarDateField(
+        dateValue = expenseDate,
+        onDateChange = { expenseDate = it },
+        label = "Expense Date (DD-MM-YYYY)",
+        modifier = Modifier.fillMaxWidth()
+      )
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         FormFieldInput(
           value = fuelText,
@@ -1749,22 +1863,19 @@ fun CustomerWebsitePreviewDialog(
   var pickupDrop by remember { mutableStateOf("") }
   var selectedCategory by remember { mutableStateOf("SUVs") }
   var budgetText by remember { mutableStateOf("8500") }
+  var travelDate by remember {
+    val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.US)
+    mutableStateOf(sdf.format(Date()))
+  }
 
   CrmFormModalShell(
     badgeText = "LIVE CUSTOMER BOOKING PORTAL",
     badgeBg = KpiGreenBg,
     badgeFg = NewBookingGreen,
     title = agencyName,
-    subtitle = "Customer web inquiries submitted here flow directly into your Admin Command Center Leads pipeline.",
+    subtitle = "Customer web inquiries submitted here flow directly into your Dashboard View Leads pipeline.",
     primaryButtonText = "Send Web Booking Inquiry",
     primaryButtonColor = NewBookingGreen,
-    onQuickFillSample = {
-      visitorName = "Vikramaditya Rao"
-      visitorPhone = "+91 98450 99001"
-      pickupDrop = "Bengaluru Airport T2 to Mysuru Luxury Resort"
-      selectedCategory = "SUVs"
-      budgetText = "9500"
-    },
     onClearFields = {
       visitorName = ""
       visitorPhone = ""
@@ -1776,7 +1887,7 @@ fun CustomerWebsitePreviewDialog(
       onSubmitWebLead(
         visitorName.ifBlank { "Website Visitor" },
         visitorPhone.ifBlank { "+91 98450 99001" },
-        pickupDrop.ifBlank { "Bengaluru Airport to Mysuru Resort" },
+        pickupDrop.ifBlank { "Bengaluru Airport to Mysuru Resort ($travelDate)" },
         selectedCategory,
         budgetText.toLongOrNull() ?: 8500L
       )
@@ -1792,7 +1903,7 @@ fun CustomerWebsitePreviewDialog(
         FormFieldInput(
           value = visitorName,
           onValueChange = { visitorName = it },
-          label = "Your Full Name",
+          label = "Customer Name",
           placeholder = "e.g., Vikramaditya Rao",
           icon = Icons.Default.Person,
           modifier = Modifier.weight(1f)
@@ -1806,6 +1917,12 @@ fun CustomerWebsitePreviewDialog(
           modifier = Modifier.weight(1f)
         )
       }
+      FormCalendarDateField(
+        dateValue = travelDate,
+        onDateChange = { travelDate = it },
+        label = "Preferred Travel Date (DD-MM-YYYY)",
+        modifier = Modifier.fillMaxWidth()
+      )
       FormFieldInput(
         value = pickupDrop,
         onValueChange = { pickupDrop = it },
@@ -1814,24 +1931,24 @@ fun CustomerWebsitePreviewDialog(
         icon = Icons.Default.Route,
         modifier = Modifier.fillMaxWidth()
       )
-      FormFieldInput(
-        value = budgetText,
-        onValueChange = { budgetText = it },
-        label = "Estimated Fare / Package Quote (₹)",
-        placeholder = "e.g., 8500",
-        icon = Icons.Default.CurrencyRupee,
-        isNumeric = true,
-        modifier = Modifier.fillMaxWidth()
-      )
-      Text("Select Preferred Vehicle Category", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        VEHICLE_CATEGORIES.forEach { cat ->
-          FilterChip(
-            selected = selectedCategory == cat,
-            onClick = { selectedCategory = cat },
-            label = { Text(cat, fontSize = 11.sp) }
-          )
-        }
+      Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormSelectDropdown(
+          selectedValue = selectedCategory,
+          options = VEHICLE_CATEGORIES,
+          onValueSelected = { selectedCategory = it },
+          label = "Select Fleet Category",
+          icon = Icons.Default.DirectionsCar,
+          modifier = Modifier.weight(1f)
+        )
+        FormFieldInput(
+          value = budgetText,
+          onValueChange = { budgetText = it },
+          label = "Estimated Fare (₹)",
+          placeholder = "e.g., 8500",
+          icon = Icons.Default.CurrencyRupee,
+          isNumeric = true,
+          modifier = Modifier.weight(1f)
+        )
       }
     }
   }

@@ -126,7 +126,7 @@ fun DashboardOverviewContent(
 
   val validBookings = bookings.filter { it.tripStatus != "Cancelled" }
   val todaysRevenue = validBookings
-    .filter { it.tripDate == todayDate && it.paymentStatus == "Paid" }
+    .filter { com.example.data.formatToDdMmYyyy(it.tripDate) == com.example.data.formatToDdMmYyyy(todayDate) && it.paymentStatus == "Paid" }
     .sumOf { it.totalAmount }
 
   val monthlyRevenue = validBookings
@@ -137,7 +137,6 @@ fun DashboardOverviewContent(
     .filter { it.paymentStatus == "Pending" }
     .sumOf { it.totalAmount }
 
-  // Exact 10 KPI cards from the uploaded reference screenshot in exact order
   val kpiCards = listOf(
     KpiCardSpec(
       id = "total_bookings",
@@ -147,15 +146,6 @@ fun DashboardOverviewContent(
       iconTint = KpiBlueIcon,
       iconBg = KpiBlueBg,
       targetSection = CrmSection.BOOKING_HISTORY
-    ),
-    KpiCardSpec(
-      id = "active_trips",
-      title = "ACTIVE\nTRIPS",
-      valueText = activeTrips.toString(),
-      icon = Icons.Default.Support,
-      iconTint = KpiTealIcon,
-      iconBg = KpiTealBg,
-      targetSection = CrmSection.TRIP_EXPENSES
     ),
     KpiCardSpec(
       id = "completed_trips",
@@ -255,17 +245,6 @@ fun DashboardOverviewContent(
         }
       }
     }
-
-    Spacer(modifier = Modifier.height(6.dp))
-
-    // Bottom Revenue Details & Cashflow Performance Section matching screenshot
-    RevenueCashflowPerformanceCard(
-      bookings = bookings,
-      selectedCategory = selectedCategory,
-      onSelectCategory = onSelectCategory,
-      onRefreshRevenue = onRefreshRevenue,
-      onToggleBookingPayment = onToggleBookingPayment
-    )
   }
 }
 
@@ -292,51 +271,12 @@ fun KpiMetricCard(
         .padding(14.dp),
       verticalArrangement = Arrangement.SpaceBetween
     ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-      ) {
-        Text(
-          text = spec.title,
-          style = MaterialTheme.typography.labelSmall,
-          color = TextMutedUppercase,
-          lineHeight = 14.sp,
-          modifier = Modifier.weight(1f)
-        )
-
-        Spacer(modifier = Modifier.width(6.dp))
-
-        // Warm peach "👁 View Details" pill button from the reference image
-        Surface(
-          color = ViewDetailsPeachBg,
-          shape = RoundedCornerShape(6.dp),
-          border = BorderStroke(1.dp, ViewDetailsPeachBorder),
-          modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .clickable { onViewDetails() }
-            .testTag("view_details_${spec.id}")
-        ) {
-          Row(
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Icon(
-              imageVector = Icons.Default.Visibility,
-              contentDescription = "View Details",
-              tint = ViewDetailsPeachText,
-              modifier = Modifier.size(11.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-              text = "View Details",
-              color = ViewDetailsPeachText,
-              fontSize = 10.sp,
-              fontWeight = FontWeight.Bold
-            )
-          }
-        }
-      }
+      Text(
+        text = spec.title,
+        style = MaterialTheme.typography.labelSmall,
+        color = TextMutedUppercase,
+        lineHeight = 14.sp
+      )
 
       Spacer(modifier = Modifier.height(18.dp))
 

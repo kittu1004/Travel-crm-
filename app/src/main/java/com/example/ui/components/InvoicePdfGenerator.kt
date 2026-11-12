@@ -168,7 +168,7 @@ suspend fun generateBookingInvoicePdf(
       subWhitePaint
     )
     canvas.drawText(
-      if (hasGst) "GST TAX INVOICE & DISPATCH VOUCHER" else "TRIP INVOICE & DISPATCH VOUCHER",
+      if (hasGst) "GST TAX INVOICE" else "TRIP INVOICE",
       36f,
       92f,
       Paint(titleWhitePaint).apply {
@@ -184,11 +184,12 @@ suspend fun generateBookingInvoicePdf(
     val rightSubPaint = Paint(subWhitePaint).apply {
       textAlign = Paint.Align.RIGHT
     }
+    val formattedDate = com.example.data.formatToDdMmYyyy(booking.tripDate)
     canvas.drawText("Invoice #: $invoiceNo", 559f, 44f, rightAlignPaint)
-    canvas.drawText("Date: ${booking.tripDate}", 559f, 66f, rightSubPaint)
+    canvas.drawText("Date: $formattedDate", 559f, 66f, rightSubPaint)
     canvas.drawText("Status: ${booking.paymentStatus.uppercase()} (${booking.paymentChannel})", 559f, 88f, rightSubPaint)
 
-    // 2. Customer & Dispatch Info Boxes
+    // 2. Customer & Driver Info Boxes
     val leftBox = RectF(36f, 140f, 288f, 275f)
     val rightBox = RectF(306f, 140f, 559f, 275f)
     canvas.drawRoundRect(leftBox, 8f, 8f, cardBgPaint)
@@ -196,17 +197,29 @@ suspend fun generateBookingInvoicePdf(
     canvas.drawRoundRect(rightBox, 8f, 8f, cardBgPaint)
     canvas.drawRoundRect(rightBox, 8f, 8f, borderPaint)
 
-    canvas.drawText("BILLED TO CUSTOMER", 50f, 162f, labelPaint)
-    canvas.drawText(booking.customerName, 50f, 184f, headingPaint)
-    canvas.drawText("Phone: ${booking.customerPhone}", 50f, 206f, bodyPaint)
-    canvas.drawText("Payment Mode: ${booking.paymentChannel}", 50f, 226f, bodyPaint)
-    canvas.drawText("Payment Status: ${booking.paymentStatus}", 50f, 246f, boldBodyPaint)
+    canvas.drawText("CUSTOMER & COMPANY DETAILS", 50f, 160f, labelPaint)
+    canvas.drawText("Customer: ${booking.customerName}", 50f, 180f, headingPaint)
+    if (booking.companyName.isNotBlank()) {
+      canvas.drawText("Company: ${booking.companyName}", 50f, 198f, bodyPaint)
+      canvas.drawText("Phone: ${booking.customerPhone}", 50f, 216f, bodyPaint)
+      canvas.drawText("Payment: ${booking.paymentStatus} (${booking.paymentChannel})", 50f, 234f, boldBodyPaint)
+    } else {
+      canvas.drawText("Phone: ${booking.customerPhone}", 50f, 202f, bodyPaint)
+      canvas.drawText("Payment Mode: ${booking.paymentChannel}", 50f, 222f, bodyPaint)
+      canvas.drawText("Payment Status: ${booking.paymentStatus}", 50f, 242f, boldBodyPaint)
+    }
 
-    canvas.drawText("FLEET & TRIP DISPATCH DETAILS", 320f, 162f, labelPaint)
-    canvas.drawText("Category: ${booking.vehicleCategory}", 320f, 184f, boldBodyPaint)
-    canvas.drawText("Vehicle Plate: ${booking.vehicleNumber}", 320f, 206f, bodyPaint)
-    canvas.drawText("Chauffeur / Driver: ${booking.driverName}", 320f, 226f, bodyPaint)
-    canvas.drawText("Odometer Distance: ${booking.distanceKm} km (${booking.tripStatus})", 320f, 246f, bodyPaint)
+    canvas.drawText("DRIVER & FLEET DETAILS", 320f, 160f, labelPaint)
+    canvas.drawText("Fleet Category: ${booking.vehicleCategory}", 320f, 180f, boldBodyPaint)
+    canvas.drawText("Vehicle Plate: ${booking.vehicleNumber}", 320f, 198f, bodyPaint)
+    canvas.drawText("Driver Name: ${booking.driverName}", 320f, 216f, bodyPaint)
+    canvas.drawText(
+      "Driver Phone: ${booking.driverPhone.ifBlank { booking.customerPhone }}",
+      320f,
+      234f,
+      bodyPaint
+    )
+    canvas.drawText("Distance: ${booking.distanceKm} km", 320f, 252f, bodyPaint)
 
     // 3. Route Summary Box
     val routeBox = RectF(36f, 292f, 559f, 355f)
@@ -478,14 +491,17 @@ fun InvoicePdfGeneratedDialog(
 
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Column(modifier = Modifier.weight(1f)) {
-          Text("BILLED TO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
+          Text("CUSTOMER & COMPANY", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
           Text(booking.customerName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimaryDark)
+          if (booking.companyName.isNotBlank()) {
+            Text("Company: ${booking.companyName}", fontSize = 12.sp, color = TextPrimaryDark)
+          }
           Text(booking.customerPhone, fontSize = 12.sp, color = TextSecondarySlate)
         }
         Column(horizontalAlignment = Alignment.End) {
           Text("INVOICE NO & DATE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextSecondarySlate)
           Text(invoiceNo, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = SidebarActiveBlue)
-          Text(booking.tripDate, fontSize = 12.sp, color = TextSecondarySlate)
+          Text(com.example.data.formatToDdMmYyyy(booking.tripDate), fontSize = 12.sp, color = TextSecondarySlate)
         }
       }
 
@@ -501,8 +517,9 @@ fun InvoicePdfGeneratedDialog(
             fontSize = 13.sp,
             color = TextPrimaryDark
           )
+          val driverPhoneText = if (booking.driverPhone.isNotBlank()) " (${booking.driverPhone})" else ""
           Text(
-            text = "Vehicle: ${booking.vehicleCategory} (${booking.vehicleNumber}) • Driver: ${booking.driverName} • ${booking.distanceKm} km",
+            text = "Fleet: ${booking.vehicleCategory} (${booking.vehicleNumber}) • Driver: ${booking.driverName}$driverPhoneText • ${booking.distanceKm} km",
             fontSize = 11.sp,
             color = TextSecondarySlate
           )

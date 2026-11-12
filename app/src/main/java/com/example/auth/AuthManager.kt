@@ -200,18 +200,13 @@ fun AuthScreen(
 ) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
-  val credentialManager = remember { CredentialManager.create(context) }
   var isLoading by remember { mutableStateOf(false) }
   var errorMessage by remember { mutableStateOf<String?>(null) }
 
   LaunchedEffect(Unit) {
-    attemptAutoSignIn(
-      context = context,
-      credentialManager = credentialManager,
-      onAuthSuccess = onAuthSuccess,
-      onUnauthenticated = {},
-      scope = scope
-    )
+    if (Firebase.auth.currentUser != null) {
+      onAuthSuccess()
+    }
   }
 
   Box(
@@ -338,6 +333,7 @@ fun AuthScreen(
           onClick = {
             errorMessage = null
             isLoading = true
+            val credentialManager = CredentialManager.create(context)
             onGoogleSignInClicked(
               context = context,
               credentialManager = credentialManager,

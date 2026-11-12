@@ -192,8 +192,9 @@ fun CrmDarkSidebar(
 fun CommandCenterHeader(
   isCompactScreen: Boolean,
   isBusy: Boolean,
+  selectedSection: CrmSection = CrmSection.DASHBOARD,
   onOpenDrawer: () -> Unit,
-  onLoadDemoData: () -> Unit,
+  onLoadDemoData: () -> Unit = {},
   onNewBooking: () -> Unit,
   onViewWebsite: () -> Unit,
   onDownloadApk: () -> Unit = {},
@@ -233,7 +234,7 @@ fun CommandCenterHeader(
 
         Column(modifier = Modifier.weight(1f)) {
           Text(
-            text = "Admin Operations Command Center",
+            text = "Dashboard View",
             style = MaterialTheme.typography.headlineMedium,
             color = TextPrimaryDark,
             fontWeight = FontWeight.ExtraBold
@@ -250,8 +251,7 @@ fun CommandCenterHeader(
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    // Top-right action buttons row matching reference screenshot:
-    // [✨ Load Live Demo Data]  [+ New Booking]  [↗ View Website]
+    // Top action buttons row (Load Live Demo Data removed; New Booking hidden on Invoices History, GST Tax Details & Vehicles Maintenance)
     Row(
       modifier = Modifier
         .fillMaxWidth()
@@ -259,52 +259,33 @@ fun CommandCenterHeader(
       horizontalArrangement = Arrangement.spacedBy(10.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      OutlinedButton(
-        onClick = onLoadDemoData,
-        enabled = !isBusy,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, DemoDataBlueBorder),
-        colors = ButtonDefaults.outlinedButtonColors(
-          containerColor = DemoDataBlueBg,
-          contentColor = DemoDataBlueText
-        ),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-        modifier = Modifier.testTag("load_demo_data_button")
+      if (
+        selectedSection != CrmSection.INVOICES_BILLING &&
+        selectedSection != CrmSection.GST_TAX &&
+        selectedSection != CrmSection.VEHICLES_MAINTENANCE
       ) {
-        Icon(
-          imageVector = Icons.Default.AutoAwesome,
-          contentDescription = null,
-          modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-          text = if (isBusy) "Syncing Demo Data..." else "Load Live Demo Data",
-          fontSize = 13.sp,
-          fontWeight = FontWeight.SemiBold
-        )
-      }
-
-      Button(
-        onClick = onNewBooking,
-        shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.buttonColors(
-          containerColor = NewBookingGreen,
-          contentColor = Color.White
-        ),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        modifier = Modifier.testTag("new_booking_button")
-      ) {
-        Icon(
-          imageVector = Icons.Default.Add,
-          contentDescription = null,
-          modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-          text = "New Booking",
-          fontSize = 13.sp,
-          fontWeight = FontWeight.Bold
-        )
+        Button(
+          onClick = onNewBooking,
+          shape = RoundedCornerShape(10.dp),
+          colors = ButtonDefaults.buttonColors(
+            containerColor = NewBookingGreen,
+            contentColor = Color.White
+          ),
+          contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+          modifier = Modifier.testTag("new_booking_button")
+        ) {
+          Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp)
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "New Booking",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+          )
+        }
       }
 
       OutlinedButton(

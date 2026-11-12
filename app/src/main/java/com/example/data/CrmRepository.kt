@@ -11,10 +11,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
@@ -49,7 +51,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
           throw error
         }
     )
-  }
+  }.flowOn(Dispatchers.Default)
 
   fun observeDrivers(userId: String = requireUserId()): Flow<List<Driver>> = flow {
     val path = "users/$userId/drivers"
@@ -65,7 +67,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
           throw error
         }
     )
-  }
+  }.flowOn(Dispatchers.Default)
 
   fun observeVehicles(userId: String = requireUserId()): Flow<List<Vehicle>> = flow {
     val path = "users/$userId/vehicles"
@@ -81,7 +83,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
           throw error
         }
     )
-  }
+  }.flowOn(Dispatchers.Default)
 
   fun observeLeads(userId: String = requireUserId()): Flow<List<Lead>> = flow {
     val path = "users/$userId/leads"
@@ -97,7 +99,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
           throw error
         }
     )
-  }
+  }.flowOn(Dispatchers.Default)
 
   fun observeCustomers(userId: String = requireUserId()): Flow<List<Customer>> = flow {
     val path = "users/$userId/customers"
@@ -113,7 +115,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
           throw error
         }
     )
-  }
+  }.flowOn(Dispatchers.Default)
 
   private fun logStreamErrorIfAuthenticated(error: Throwable, uid: String, path: String) {
     val firestoreError = generateSequence(error) { it.cause }
@@ -134,16 +136,20 @@ class CrmRepository(private val db: FirebaseFirestore) {
     val payload = mapOf(
       "userId" to uid,
       "customerName" to booking.customerName.trim(),
+      "companyName" to booking.companyName.trim(),
       "customerPhone" to booking.customerPhone.trim(),
       "pickupLocation" to booking.pickupLocation.trim(),
       "dropLocation" to booking.dropLocation.trim(),
       "vehicleCategory" to booking.vehicleCategory,
       "vehicleNumber" to booking.vehicleNumber.trim(),
       "driverName" to booking.driverName.trim(),
+      "driverPhone" to booking.driverPhone.trim(),
       "tripStatus" to booking.tripStatus,
       "paymentStatus" to booking.paymentStatus,
       "paymentChannel" to booking.paymentChannel,
       "baseAmount" to booking.baseAmount,
+      "tollCharges" to booking.tollCharges,
+      "parkingCharges" to booking.parkingCharges,
       "gstAmount" to booking.gstAmount,
       "totalAmount" to booking.totalAmount,
       "expenseAmount" to booking.expenseAmount,
@@ -269,10 +275,18 @@ class CrmRepository(private val db: FirebaseFirestore) {
       "userId" to uid,
       "registrationNumber" to vehicle.registrationNumber.trim(),
       "modelName" to vehicle.modelName.trim(),
+      "manufacturingYear" to vehicle.manufacturingYear.trim(),
       "category" to vehicle.category,
       "status" to vehicle.status,
       "maintenanceCost" to vehicle.maintenanceCost,
+      "serviceDate" to vehicle.serviceDate.trim(),
       "nextServiceDate" to vehicle.nextServiceDate.trim(),
+      "serviceKilometers" to vehicle.serviceKilometers,
+      "presentRunningKilometers" to vehicle.presentRunningKilometers,
+      "nextServiceKilometers" to vehicle.nextServiceKilometers,
+      "insuranceDetails" to vehicle.insuranceDetails.trim(),
+      "fitnessDetails" to vehicle.fitnessDetails.trim(),
+      "pollutionDetails" to vehicle.pollutionDetails.trim(),
       "serviceNotes" to vehicle.serviceNotes.trim(),
       "createdAt" to FieldValue.serverTimestamp(),
       "updatedAt" to FieldValue.serverTimestamp(),
@@ -380,6 +394,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
     val payload = mapOf(
       "userId" to uid,
       "name" to customer.name.trim(),
+      "address" to customer.address.trim(),
       "phone" to customer.phone.trim(),
       "email" to customer.email.trim(),
       "companyName" to customer.companyName.trim(),

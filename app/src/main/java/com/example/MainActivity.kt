@@ -103,6 +103,21 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
+  var isWindowReady by remember { mutableStateOf(false) }
+  androidx.compose.runtime.LaunchedEffect(Unit) {
+    androidx.compose.runtime.withFrameNanos { }
+    isWindowReady = true
+  }
+
+  if (!isWindowReady) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(SidebarNavy)
+    )
+    return
+  }
+
   val currentUser by auth.authStateFlow().collectAsStateWithLifecycle(initialValue = auth.currentUser)
   val user = currentUser
 
@@ -139,7 +154,6 @@ fun FleetCrmCommandCenterScreen(
 
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
-  val credentialManager = remember { CredentialManager.create(context) }
 
   val selectedSection by viewModel.selectedSection.collectAsStateWithLifecycle()
   val selectedInflowCategory by viewModel.selectedInflowCategory.collectAsStateWithLifecycle()
@@ -169,6 +183,7 @@ fun FleetCrmCommandCenterScreen(
 
   var showNewBookingDialog by remember { mutableStateOf(false) }
   var editingBooking by remember { mutableStateOf<Booking?>(null) }
+  var isInvoiceFormMode by remember { mutableStateOf(false) }
 
   var showAddDriverDialog by remember { mutableStateOf(false) }
   var editingDriver by remember { mutableStateOf<Driver?>(null) }
@@ -244,10 +259,12 @@ fun FleetCrmCommandCenterScreen(
           CommandCenterHeader(
             isCompactScreen = !isWideScreen,
             isBusy = isActionBusy,
+            selectedSection = selectedSection,
             onOpenDrawer = { scope.launch { drawerState.open() } },
             onLoadDemoData = { viewModel.loadLiveDemoData() },
             onNewBooking = {
               editingBooking = null
+              isInvoiceFormMode = false
               showNewBookingDialog = true
             },
             onViewWebsite = { showWebsitePreviewDialog = true },
@@ -318,6 +335,7 @@ fun FleetCrmCommandCenterScreen(
               onBackToDashboard = { viewModel.selectSection(CrmSection.DASHBOARD) },
               onOpenNewBooking = {
                 editingBooking = null
+                isInvoiceFormMode = false
                 showNewBookingDialog = true
               },
               onOpenAddLead = {
@@ -349,11 +367,18 @@ fun FleetCrmCommandCenterScreen(
               onSaveSettings = { a, g, s -> viewModel.updateSystemSettings(a, g, s) },
               onLoadDemoData = { viewModel.loadLiveDemoData() },
               onSignOut = {
+                val credentialManager = CredentialManager.create(context)
                 signOut(credentialManager = credentialManager, scope = scope)
               },
               onOpenApkDownloadCenter = { showApkDownloadDialog = true },
               onEditBooking = { booking ->
                 editingBooking = booking
+                isInvoiceFormMode = false
+                showNewBookingDialog = true
+              },
+              onEditInvoice = { booking ->
+                editingBooking = booking
+                isInvoiceFormMode = true
                 showNewBookingDialog = true
               },
               onEditLead = { lead ->
@@ -371,6 +396,14 @@ fun FleetCrmCommandCenterScreen(
               onEditCustomer = { customer ->
                 editingCustomer = customer
                 showAddCustomerDialog = true
+              },
+              onDeleteCustomer = { customer ->
+                if (customer.id.startsWith("booking_cust_")) {
+                  val bookingId = customer.id.removePrefix("booking_cust_")
+                  viewModel.deleteBooking(bookingId)
+                } else {
+                  viewModel.deleteCustomer(customer.id)
+                }
               },
               onEditTripExpenses = { booking ->
                 editingExpenseBooking = booking
@@ -400,6 +433,7 @@ fun FleetCrmCommandCenterScreen(
     NewBookingDialog(
       defaultDate = viewModel.todayDateString(),
       initialBooking = editingBooking,
+      isInvoiceForm = isInvoiceFormMode,
       availableDrivers = drivers,
       availableVehicles = vehicles,
       availableCustomers = customers,
@@ -407,17 +441,20 @@ fun FleetCrmCommandCenterScreen(
       onDismiss = {
         showNewBookingDialog = false
         editingBooking = null
+        isInvoiceFormMode = false
       },
-      onConfirm = { name, phone, pickup, drop, cat, vehNo, driver, tStat, pStat, chan, base, toll, parking, gst, exp, dist, date ->
+      onConfirm = { name, compName, phone, pickup, drop, cat, vehNo, driver, drvPhone, tStat, pStat, chan, base, toll, parking, gst, exp, dist, date ->
         viewModel.saveBookingDetails(
           existingBooking = editingBooking,
           customerName = name,
+          companyName = compName,
           customerPhone = phone,
           pickupLocation = pickup,
           dropLocation = drop,
           vehicleCategory = cat,
           vehicleNumber = vehNo,
           driverName = driver,
+          driverPhone = drvPhone,
           tripStatus = tStat,
           paymentStatus = pStat,
           paymentChannel = chan,
@@ -430,6 +467,7 @@ fun FleetCrmCommandCenterScreen(
           tripDate = date
         )
         editingBooking = null
+        isInvoiceFormMode = false
       }
     )
   }
@@ -466,15 +504,23 @@ fun FleetCrmCommandCenterScreen(
         showAddVehicleDialog = false
         editingVehicle = null
       },
-      onConfirm = { reg, mod, cat, st, cost, nextDate, notes ->
+      onConfirm = { reg, mod, mfgYear, cat, st, cost, srvDate, nextDate, srvKm, runKm, nextKm, ins, fit, pol, notes ->
         viewModel.saveVehicleDetails(
           existingVehicle = editingVehicle,
           registrationNumber = reg,
           modelName = mod,
+          manufacturingYear = mfgYear,
           category = cat,
           status = st,
           maintenanceCost = cost,
+          serviceDate = srvDate,
           nextServiceDate = nextDate,
+          serviceKilometers = srvKm,
+          presentRunningKilometers = runKm,
+          nextServiceKilometers = nextKm,
+          insuranceDetails = ins,
+          fitnessDetails = fit,
+          pollutionDetails = pol,
           serviceNotes = notes
         )
         editingVehicle = null
@@ -512,10 +558,12 @@ fun FleetCrmCommandCenterScreen(
         showAddCustomerDialog = false
         editingCustomer = null
       },
-      onConfirm = { name, phone, email, comp, gst, totalBookings, billed, pending ->
+      onConfirm = { name, address, phone, email, comp, gst, totalBookings, billed, pending ->
+        val persistedCustomer = editingCustomer?.takeUnless { it.id.startsWith("booking_cust_") }
         viewModel.saveCustomerDetails(
-          existingCustomer = editingCustomer,
+          existingCustomer = persistedCustomer,
           name = name,
+          address = address,
           phone = phone,
           email = email,
           companyName = comp,
@@ -566,6 +614,7 @@ fun FleetCrmCommandCenterScreen(
       gstPercent = defaultGstPercent,
       onEditInvoice = {
         editingBooking = invoiceBooking
+        isInvoiceFormMode = true
         showNewBookingDialog = true
       },
       onDismiss = { viewModel.dismissInvoicePdfDialog() },

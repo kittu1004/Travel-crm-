@@ -186,14 +186,16 @@ fun CrmModuleDispatcher(
   onDeleteVehicle: (String) -> Unit,
   onSettleCustomer: (Customer) -> Unit,
   onSaveSettings: (String, String, Int) -> Unit,
-  onLoadDemoData: () -> Unit,
+  onLoadDemoData: () -> Unit = {},
   onSignOut: () -> Unit,
   onOpenApkDownloadCenter: () -> Unit = {},
   onEditBooking: (Booking) -> Unit = {},
+  onEditInvoice: (Booking) -> Unit = onEditBooking,
   onEditLead: (Lead) -> Unit = {},
   onEditDriver: (Driver) -> Unit = {},
   onEditVehicle: (Vehicle) -> Unit = {},
   onEditCustomer: (Customer) -> Unit = {},
+  onDeleteCustomer: (Customer) -> Unit = {},
   onEditTripExpenses: (Booking) -> Unit = {},
   onDownloadInvoicePdf: (Booking) -> Unit = {},
 ) {
@@ -208,8 +210,7 @@ fun CrmModuleDispatcher(
       )
       if (leads.isEmpty()) {
         EmptyModuleCard(
-          message = "No travel leads yet. Tap 'Add Lead' or 'Load Live Demo Data' to populate inquiries.",
-          onLoadDemo = onLoadDemoData
+          message = "No travel leads yet. Tap 'Add Lead' to create an inquiry."
         )
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -288,16 +289,15 @@ fun CrmModuleDispatcher(
 
     CrmSection.BOOKING_HISTORY -> {
       CrmModuleSectionHeader(
-        title = "Booking History & Dispatch Log",
-        subtitle = "Manage active, completed, and cancelled fleet trips across all vehicle categories.",
+        title = "Booking History",
+        subtitle = "Manage fleet trips, customer & company records, driver details, and invoices.",
         actionLabel = "New Booking",
         onActionClick = onOpenNewBooking,
         onBackToDashboard = onBackToDashboard
       )
       if (bookings.isEmpty()) {
         EmptyModuleCard(
-          message = "No bookings recorded yet. Create a new booking or load live demo data.",
-          onLoadDemo = onLoadDemoData
+          message = "No bookings recorded yet. Tap 'New Booking' to create a booking."
         )
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -315,8 +315,9 @@ fun CrmModuleDispatcher(
                   verticalAlignment = Alignment.CenterVertically
                 ) {
                   Column(modifier = Modifier.weight(1f)) {
+                    val companySuffix = if (booking.companyName.isNotBlank()) " • ${booking.companyName}" else ""
                     Text(
-                      "${booking.customerName} (${booking.vehicleCategory})",
+                      "${booking.customerName}$companySuffix (${booking.vehicleCategory})",
                       fontWeight = FontWeight.Bold,
                       fontSize = 16.sp,
                       color = TextPrimaryDark
@@ -342,8 +343,9 @@ fun CrmModuleDispatcher(
                   )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+                val driverPhoneInfo = if (booking.driverPhone.isNotBlank()) " (${booking.driverPhone})" else ""
                 Text(
-                  "Driver: ${booking.driverName} • Vehicle: ${booking.vehicleNumber} • Date: ${booking.tripDate}",
+                  "Driver: ${booking.driverName}$driverPhoneInfo • Vehicle: ${booking.vehicleNumber} • Date: ${com.example.data.formatToDdMmYyyy(booking.tripDate)}",
                   fontSize = 12.sp,
                   color = TextSecondarySlate
                 )
@@ -426,14 +428,14 @@ fun CrmModuleDispatcher(
 
     CrmSection.INVOICES_BILLING -> {
       CrmModuleSectionHeader(
-        title = "Invoices & Billing Ledger",
+        title = "Invoices History",
         subtitle = "Trip & tax invoices with base fare, toll/parking charges, optional GST, and PDF export.",
-        actionLabel = "New Invoice",
-        onActionClick = onOpenNewBooking,
+        actionLabel = null,
+        onActionClick = null,
         onBackToDashboard = onBackToDashboard
       )
       if (bookings.isEmpty()) {
-        EmptyModuleCard("No invoices generated yet.", onLoadDemo = onLoadDemoData)
+        EmptyModuleCard("No invoices generated yet.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           bookings.forEachIndexed { idx, b ->
@@ -451,11 +453,17 @@ fun CrmModuleDispatcher(
                 verticalAlignment = Alignment.CenterVertically
               ) {
                 Column(modifier = Modifier.weight(1f)) {
+                  val companyLabel = if (b.companyName.isNotBlank()) " (${b.companyName})" else ""
                   Text(
-                    "INV-2026-${1001 + idx} • ${b.customerName}",
+                    "INV-2026-${1001 + idx} • ${b.customerName}$companyLabel",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = TextPrimaryDark
+                  )
+                  Text(
+                    text = "Date: ${com.example.data.formatToDdMmYyyy(b.tripDate)} • Driver: ${b.driverName}${if (b.driverPhone.isNotBlank()) " (${b.driverPhone})" else ""}",
+                    fontSize = 11.sp,
+                    color = TextSecondarySlate
                   )
                   Text(
                     text = buildString {
@@ -478,7 +486,7 @@ fun CrmModuleDispatcher(
                   Spacer(modifier = Modifier.height(4.dp))
                   Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(
-                      onClick = { onEditBooking(b) },
+                      onClick = { onEditInvoice(b) },
                       contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                       shape = RoundedCornerShape(8.dp)
                     ) {
@@ -525,12 +533,10 @@ fun CrmModuleDispatcher(
       val totalGst = activeBookings.sumOf { it.gstAmount }
       val cgst = totalGst / 2L
       val sgst = totalGst - cgst
-      val maintenanceItc = (vehicles.sumOf { it.maintenanceCost } * 18L) / 100L
-      val netGstPayable = (totalGst - maintenanceItc).coerceAtLeast(0L)
 
       CrmModuleSectionHeader(
-        title = "GST Tax Details & Return Summary",
-        subtitle = "SAC 9964 Passenger Transport GST liability, CGST/SGST split, and Input Tax Credit.",
+        title = "GST Tax Details",
+        subtitle = "SAC 9964 Passenger Transport GST details, CGST/SGST split, and Collected Net GST.",
         onBackToDashboard = onBackToDashboard
       )
       Card(
@@ -546,23 +552,63 @@ fun CrmModuleDispatcher(
           TaxRow("Output CGST (${defaultGstPercent / 2.0}%)", formatInr(cgst))
           TaxRow("Output SGST (${defaultGstPercent / 2.0}%)", formatInr(sgst))
           TaxRow("Gross Output GST Collected", formatInr(totalGst), isBold = true)
-          TaxRow("Less: Input Tax Credit (Fleet Maintenance 18%)", "- ${formatInr(maintenanceItc)}", color = KpiGreenIcon)
           HorizontalDivider(color = CardBorder)
-          TaxRow("Net GST Payable in Electronic Cash Ledger", formatInr(netGstPayable), isBold = true, color = KpiTealIcon)
+          TaxRow("Collected Net GST", formatInr(totalGst), isBold = true, color = KpiTealIcon)
         }
       }
     }
 
     CrmSection.VEHICLES_MAINTENANCE -> {
+      var selectedVehicleTab by remember { mutableStateOf(0) } // 0 = Add Vehicle Section, 1 = Workshop Maintenance
+
       CrmModuleSectionHeader(
-        title = "Vehicles Maintenance & Fleet Registry",
-        subtitle = "Monitor Sedans, Compact SUVs, SUVs, and Tourist Travellers health and service costs.",
+        title = "Vehicles Maintenance",
+        subtitle = "Manage fleet vehicles, manufacturing year, fleet categories, and workshop maintenance.",
         actionLabel = "Add Vehicle",
         onActionClick = onOpenAddVehicle,
         onBackToDashboard = onBackToDashboard
       )
+
+      // Tabs: Add Vehicle Section | Workshop Maintenance
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 12.dp)
+          .clip(RoundedCornerShape(12.dp))
+          .background(CardSurface)
+          .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+          .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+      ) {
+        val tabs = listOf("Add Vehicle Section", "Workshop Maintenance")
+        tabs.forEachIndexed { index, tabTitle ->
+          val isSelected = selectedVehicleTab == index
+          Surface(
+            color = if (isSelected) SidebarActiveBlue else Color.Transparent,
+            shape = RoundedCornerShape(9.dp),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(9.dp))
+              .clickable { selectedVehicleTab = index }
+              .testTag("vehicles_module_tab_$index")
+          ) {
+            Box(
+              modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+              contentAlignment = Alignment.Center
+            ) {
+              Text(
+                text = tabTitle,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (isSelected) Color.White else TextPrimaryDark
+              )
+            }
+          }
+        }
+      }
+
       if (vehicles.isEmpty()) {
-        EmptyModuleCard("No fleet vehicles registered yet.", onLoadDemo = onLoadDemoData)
+        EmptyModuleCard("No fleet vehicles registered yet. Tap 'Add Vehicle' to add a vehicle.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           vehicles.forEach { v ->
@@ -572,52 +618,46 @@ fun CrmModuleDispatcher(
               border = BorderStroke(1.dp, CardBorder),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
-                ) {
-                  Column(modifier = Modifier.weight(1f)) {
-                    Text("${v.modelName} (${v.registrationNumber})", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text("Category: ${v.category} • Next Service: ${v.nextServiceDate}", fontSize = 12.sp, color = TextSecondarySlate)
-                  }
-                  Surface(
-                    color = when (v.status) {
-                      "Available" -> KpiGreenBg
-                      "Maintenance" -> KpiRedBg
-                      else -> KpiBlueBg
-                    },
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.clickable { onCycleVehicleStatus(v) }
+              if (selectedVehicleTab == 0) {
+                // Tab 1: Add Vehicle Section (Vehicle Name/Make/Model, Manufacturing Year, Fleet Category, Operational Status Removed)
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                   ) {
-                    Text(
-                      text = "${v.status} ↻",
-                      color = when (v.status) {
-                        "Available" -> KpiGreenIcon
-                        "Maintenance" -> KpiRedIcon
-                        else -> KpiBlueIcon
-                      },
-                      fontSize = 12.sp,
-                      fontWeight = FontWeight.Bold,
-                      modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(
+                        text = v.modelName,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "Registration No: ${v.registrationNumber} • Manufacturing Year: ${v.manufacturingYear.ifBlank { "2024" }}",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+                    Surface(
+                      color = KpiBlueBg,
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Text(
+                        text = "Category: ${v.category}",
+                        color = SidebarActiveBlue,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                      )
+                    }
                   }
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text("Notes: ${v.serviceNotes}", fontSize = 13.sp, color = TextPrimaryDark)
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
-                ) {
-                  Text(
-                    "Maintenance Spend: ${formatInr(v.maintenanceCost)}",
-                    fontWeight = FontWeight.Bold,
-                    color = KpiOrangeIcon
-                  )
-                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
                     OutlinedButton(
                       onClick = { onEditVehicle(v) },
                       contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
@@ -625,10 +665,75 @@ fun CrmModuleDispatcher(
                     ) {
                       Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Details", fontSize = 11.sp)
+                      Text("Edit Vehicle", fontSize = 11.sp)
                     }
+                    Spacer(modifier = Modifier.width(6.dp))
                     IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
-                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = TextSecondarySlate)
+                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = KpiRedIcon)
+                    }
+                  }
+                }
+              } else {
+                // Tab 2: Workshop Maintenance
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Text(
+                      text = "${v.modelName} (${v.registrationNumber})",
+                      fontWeight = FontWeight.ExtraBold,
+                      fontSize = 16.sp,
+                      color = TextPrimaryDark
+                    )
+                    Text(
+                      text = "Spend: ${formatInr(v.maintenanceCost)}",
+                      fontWeight = FontWeight.Bold,
+                      fontSize = 13.sp,
+                      color = KpiOrangeIcon
+                    )
+                  }
+
+                  Text(
+                    text = "Service Date: ${com.example.data.formatToDdMmYyyy(v.serviceDate.ifBlank { v.nextServiceDate })} • Next Service Due: ${com.example.data.formatToDdMmYyyy(v.nextServiceDate)}",
+                    fontSize = 12.sp,
+                    color = SidebarActiveBlue,
+                    fontWeight = FontWeight.SemiBold
+                  )
+                  Text(
+                    text = "Service KM: ${v.serviceKilometers} km • Present Running KM: ${v.presentRunningKilometers} km • Next Service KM: ${v.nextServiceKilometers} km",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark
+                  )
+                  Text(
+                    text = "Insurance: ${v.insuranceDetails.ifBlank { "Active" }} • Fitness: ${v.fitnessDetails.ifBlank { "Valid" }} • Pollution: ${v.pollutionDetails.ifBlank { "Valid" }}",
+                    fontSize = 12.sp,
+                    color = TextSecondarySlate
+                  )
+                  Text(
+                    text = "Next Service Notes: ${v.serviceNotes}",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark
+                  )
+
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    OutlinedButton(
+                      onClick = { onEditVehicle(v) },
+                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                      shape = RoundedCornerShape(8.dp)
+                    ) {
+                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(4.dp))
+                      Text("Edit Workshop Log", fontSize = 11.sp)
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
+                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = KpiRedIcon)
                     }
                   }
                 }
@@ -719,7 +824,7 @@ fun CrmModuleDispatcher(
         onBackToDashboard = onBackToDashboard
       )
       if (bookings.isEmpty()) {
-        EmptyModuleCard("No trips logged yet.", onLoadDemo = onLoadDemoData)
+        EmptyModuleCard("No trips logged yet.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           bookings.forEach { b ->
@@ -813,18 +918,70 @@ fun CrmModuleDispatcher(
     }
 
     CrmSection.CUSTOMERS_ACCOUNTS -> {
+      // Combine saved Customer Data with any customers present in Booking History
+      val mergedCustomers = remember(customers, bookings) {
+        val result = mutableListOf<Customer>()
+        val seenKeys = mutableSetOf<String>()
+
+        customers.forEach { c ->
+          val matchingBookings = bookings.filter {
+            it.customerName.equals(c.name, ignoreCase = true) ||
+              (c.phone.isNotBlank() && it.customerPhone == c.phone)
+          }
+          val resolvedAddress = c.address.ifBlank {
+            matchingBookings.firstOrNull()?.let { "${it.pickupLocation} → ${it.dropLocation}" }
+              ?: c.companyName
+          }
+          val resolvedTrips = maxOf(c.totalBookings, matchingBookings.size.toLong())
+          result.add(
+            c.copy(
+              address = resolvedAddress,
+              totalBookings = resolvedTrips
+            )
+          )
+          seenKeys.add(c.name.lowercase().trim())
+          if (c.phone.isNotBlank()) seenKeys.add(c.phone.trim())
+        }
+
+        bookings
+          .groupBy { it.customerName.lowercase().trim() }
+          .forEach { (key, customerBookings) ->
+            val first = customerBookings.first()
+            val phoneKey = first.customerPhone.trim()
+            if (key.isNotBlank() && key !in seenKeys && (phoneKey.isBlank() || phoneKey !in seenKeys)) {
+              result.add(
+                Customer(
+                  id = "booking_cust_${first.id}",
+                  name = first.customerName,
+                  address = "${first.pickupLocation} → ${first.dropLocation}",
+                  phone = first.customerPhone,
+                  email = "",
+                  companyName = first.companyName.ifBlank { first.pickupLocation },
+                  gstin = "",
+                  totalBookings = customerBookings.size.toLong(),
+                  totalBilled = customerBookings.sumOf { it.totalAmount },
+                  pendingBalance = customerBookings.filter { it.paymentStatus != "Paid" }.sumOf { it.totalAmount }
+                )
+              )
+              seenKeys.add(key)
+              if (phoneKey.isNotBlank()) seenKeys.add(phoneKey)
+            }
+          }
+        result
+      }
+
       CrmModuleSectionHeader(
-        title = "Customers & Corporate Accounts",
-        subtitle = "Manage B2B corporate travel accounts, GSTIN records, and credit balances.",
+        title = "Customer Data",
+        subtitle = "Customer details synced from Booking History: Customer Name, Address, Mobile Number, and Total Trips.",
         actionLabel = "Add Customer",
         onActionClick = onOpenAddCustomer,
         onBackToDashboard = onBackToDashboard
       )
-      if (customers.isEmpty()) {
-        EmptyModuleCard("No customer accounts added yet.", onLoadDemo = onLoadDemoData)
+      if (mergedCustomers.isEmpty()) {
+        EmptyModuleCard("No customer records yet. Save a booking or tap 'Add Customer'.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          customers.forEach { c ->
+          mergedCustomers.forEach { c ->
             Card(
               shape = RoundedCornerShape(14.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
@@ -838,26 +995,62 @@ fun CrmModuleDispatcher(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
               ) {
-                Column(modifier = Modifier.weight(1f)) {
-                  Text(c.companyName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                  Text("Contact: ${c.name} (${c.phone})", fontSize = 12.sp, color = TextSecondarySlate)
-                  Text("GSTIN: ${c.gstin} • Bookings: ${c.totalBookings}", fontSize = 12.sp, color = SidebarActiveBlue)
+                Column(
+                  modifier = Modifier.weight(1f),
+                  verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                  Text(
+                    text = "Customer Name: ${c.name}",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    color = TextPrimaryDark
+                  )
+                  Text(
+                    text = "Address: ${c.address.ifBlank { c.companyName.ifBlank { "N/A" } }}",
+                    fontSize = 13.sp,
+                    color = TextSecondarySlate
+                  )
+                  Text(
+                    text = "Mobile Number: ${c.phone.ifBlank { "N/A" }}",
+                    fontSize = 13.sp,
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.SemiBold
+                  )
+                  Text(
+                    text = "Total Trips: ${c.totalBookings}",
+                    fontSize = 13.sp,
+                    color = SidebarActiveBlue,
+                    fontWeight = FontWeight.ExtraBold
+                  )
                 }
-                Column(horizontalAlignment = Alignment.End) {
-                  Text("Billed: ${formatInr(c.totalBilled)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    TextButton(onClick = { onEditCustomer(c) }) {
-                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
-                      Spacer(modifier = Modifier.width(3.dp))
-                      Text("Edit", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                    if (c.pendingBalance > 0) {
-                      TextButton(onClick = { onSettleCustomer(c) }) {
-                        Text("Settle ${formatInr(c.pendingBalance)}", color = KpiAmberIcon, fontWeight = FontWeight.Bold)
-                      }
-                    } else {
-                      Text("No Dues ✓", color = KpiGreenIcon, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  OutlinedButton(
+                    onClick = { onEditCustomer(c) },
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp)
+                  ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                  }
+                  OutlinedButton(
+                    onClick = { onDeleteCustomer(c) },
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, KpiRedIcon.copy(alpha = 0.5f)),
+                    modifier = Modifier.testTag("delete_customer_${c.id}")
+                  ) {
+                    Icon(
+                      Icons.Default.DeleteOutline,
+                      contentDescription = "Delete Customer",
+                      tint = KpiRedIcon,
+                      modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Delete", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = KpiRedIcon)
                   }
                 }
               }
@@ -1076,7 +1269,7 @@ fun CrmModuleDispatcher(
 @Composable
 private fun EmptyModuleCard(
   message: String,
-  onLoadDemo: () -> Unit,
+  onLoadDemo: () -> Unit = {},
 ) {
   Card(
     shape = RoundedCornerShape(16.dp),
@@ -1098,14 +1291,6 @@ private fun EmptyModuleCard(
       )
       Spacer(modifier = Modifier.height(10.dp))
       Text(message, style = MaterialTheme.typography.bodyMedium, color = TextSecondarySlate)
-      Spacer(modifier = Modifier.height(14.dp))
-      Button(
-        onClick = onLoadDemo,
-        colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
-        shape = RoundedCornerShape(10.dp)
-      ) {
-        Text("Load Live Demo Data", fontWeight = FontWeight.Bold)
-      }
     }
   }
 }
