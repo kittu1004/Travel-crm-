@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CurrencyRupee
@@ -210,12 +209,6 @@ fun CrmFormModalShell(
             color = Color.White,
             fontSize = 19.sp,
             fontWeight = FontWeight.ExtraBold
-          )
-          Spacer(modifier = Modifier.height(2.dp))
-          Text(
-            text = subtitle,
-            color = SidebarTextMuted,
-            fontSize = 12.sp
           )
         }
 
@@ -463,21 +456,6 @@ private fun FormCalendarDateField(
             tint = SidebarActiveBlue,
             modifier = Modifier.size(18.dp)
           )
-        }
-      },
-      trailingIcon = {
-        TextButton(
-          onClick = { showCalendarDialog = true },
-          contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-          Icon(
-            imageVector = Icons.Default.CalendarToday,
-            contentDescription = "Pick Date from Calendar",
-            tint = SidebarActiveBlue,
-            modifier = Modifier.size(15.dp)
-          )
-          Spacer(modifier = Modifier.width(3.dp))
-          Text("Calendar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
         }
       },
       singleLine = true,

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.example.data.Booking
+import com.example.data.Customer
 import com.example.ui.formatInr
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
@@ -921,3 +922,404 @@ private fun InvoiceLineRow(label: String, value: String) {
     Text(value, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimaryDark)
   }
 }
+
+suspend fun generateCustomersDataPdf(
+  context: Context,
+  customers: List<Customer>,
+  bookings: List<Booking>,
+  agencyName: String,
+  agencyGstin: String,
+  selectedCustomer: Customer? = null,
+): Result<File> = withContext(Dispatchers.IO) {
+  runCatching {
+    val targetCustomers = if (selectedCustomer != null) listOf(selectedCustomer) else customers
+    val invoicesDir = File(context.cacheDir, "invoices").apply { mkdirs() }
+    val safeName = selectedCustomer?.name?.replace(Regex("[^a-zA-Z0-9_-]"), "_")?.take(24)?.ifBlank { "Customer" }
+    val fileName = if (safeName != null) "Customer_Data_${safeName}.pdf" else "Customers_Data_Report.pdf"
+    val pdfFile = File(invoicesDir, fileName)
+
+    val pdfDocument = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+    val page = pdfDocument.startPage(pageInfo)
+    val canvas = page.canvas
+
+    val navyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#0B1120")
+      style = Paint.Style.FILL
+    }
+    val cardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#F8FAFC")
+      style = Paint.Style.FILL
+    }
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#CBD5E1")
+      style = Paint.Style.STROKE
+      strokeWidth = 1f
+    }
+    val titleWhitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.WHITE
+      textSize = 20f
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val subWhitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#94A3B8")
+      textSize = 11f
+    }
+    val headingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#0F172A")
+      textSize = 13f
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#1E293B")
+      textSize = 11f
+    }
+    val boldBodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#0F172A")
+      textSize = 11.5f
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    // Header
+    canvas.drawRect(0f, 0f, 595f, 108f, navyPaint)
+    canvas.drawText(
+      if (selectedCustomer != null) "Customer Data Profile: ${selectedCustomer.name}" else "Customers Data Report",
+      36f,
+      44f,
+      titleWhitePaint
+    )
+    val headerSubtitle = buildString {
+      if (agencyName.isNotBlank()) append(agencyName)
+      if (agencyGstin.isNotBlank()) {
+        if (isNotEmpty()) append("  •  ")
+        append("GSTIN: $agencyGstin")
+      }
+      if (isEmpty()) append("Saved Customer Records & Trip Summary")
+    }
+    canvas.drawText(headerSubtitle, 36f, 68f, subWhitePaint)
+    canvas.drawText(
+      "Total Saved Customers in Report: ${targetCustomers.size}  •  Total Trips: ${targetCustomers.sumOf { it.totalBookings }}",
+      36f,
+      88f,
+      subWhitePaint
+    )
+
+    var y = 132f
+    if (selectedCustomer != null) {
+      val boxRect = RectF(36f, y, 559f, y + 180f)
+      canvas.drawRoundRect(boxRect, 10f, 10f, cardBgPaint)
+      canvas.drawRoundRect(boxRect, 10f, 10f, borderPaint)
+
+      var detailY = y + 26f
+      canvas.drawText("CUSTOMER DETAILS", 52f, detailY, headingPaint)
+      detailY += 24f
+      canvas.drawText("Customer Name: ${selectedCustomer.name}", 52f, detailY, boldBodyPaint)
+      detailY += 20f
+      canvas.drawText("Company Name: ${selectedCustomer.companyName.ifBlank { "N/A" }}", 52f, detailY, bodyPaint)
+      detailY += 20f
+      canvas.drawText("Address: ${selectedCustomer.address.ifBlank { "N/A" }}", 52f, detailY, bodyPaint)
+      detailY += 20f
+      canvas.drawText("Mobile Number: ${selectedCustomer.phone.ifBlank { "N/A" }}", 52f, detailY, bodyPaint)
+      detailY += 20f
+      canvas.drawText("Total Trips: ${selectedCustomer.totalBookings}   |   Total Billed: ${formatInr(selectedCustomer.totalBilled)}", 52f, detailY, boldBodyPaint)
+
+      y += 204f
+      val custBookings = bookings.filter {
+        it.customerName.equals(selectedCustomer.name, ignoreCase = true) ||
+          (selectedCustomer.phone.isNotBlank() && it.customerPhone == selectedCustomer.phone)
+      }
+      canvas.drawText("ASSOCIATED BOOKINGS / TRIPS (${custBookings.size})", 36f, y, headingPaint)
+      y += 14f
+      val thRect = RectF(36f, y, 559f, y + 26f)
+      canvas.drawRoundRect(thRect, 6f, 6f, navyPaint)
+      val thWhite = Paint(titleWhitePaint).apply { textSize = 10f }
+      canvas.drawText("DATE", 48f, y + 17f, thWhite)
+      canvas.drawText("ROUTE", 130f, y + 17f, thWhite)
+      canvas.drawText("VEHICLE", 345f, y + 17f, thWhite)
+      canvas.drawText("AMOUNT", 475f, y + 17f, thWhite)
+      y += 44f
+      custBookings.take(14).forEach { b ->
+        canvas.drawText(com.example.data.formatToDdMmYyyy(b.tripDate), 48f, y, bodyPaint)
+        canvas.drawText("${b.pickupLocation} -> ${b.dropLocation}".take(32), 130f, y, bodyPaint)
+        canvas.drawText("${b.vehicleCategory} ${b.vehicleModel}".trim().take(18), 345f, y, bodyPaint)
+        canvas.drawText(formatInr(b.totalAmount), 475f, y, boldBodyPaint)
+        canvas.drawLine(36f, y + 8f, 559f, y + 8f, borderPaint)
+        y += 24f
+      }
+    } else {
+      val thRect = RectF(36f, y, 559f, y + 28f)
+      canvas.drawRoundRect(thRect, 6f, 6f, navyPaint)
+      val thWhite = Paint(titleWhitePaint).apply { textSize = 10f }
+      canvas.drawText("CUSTOMER NAME", 48f, y + 18f, thWhite)
+      canvas.drawText("MOBILE NUMBER", 190f, y + 18f, thWhite)
+      canvas.drawText("ADDRESS / COMPANY", 300f, y + 18f, thWhite)
+      canvas.drawText("TOTAL TRIPS", 480f, y + 18f, thWhite)
+
+      var rowY = y + 48f
+      targetCustomers.take(22).forEach { c ->
+        canvas.drawText(c.name.take(22), 48f, rowY, boldBodyPaint)
+        canvas.drawText(c.phone.ifBlank { "N/A" }.take(15), 190f, rowY, bodyPaint)
+        canvas.drawText(c.address.ifBlank { c.companyName.ifBlank { "N/A" } }.take(26), 300f, rowY, bodyPaint)
+        canvas.drawText(c.totalBookings.toString(), 505f, rowY, boldBodyPaint)
+        canvas.drawLine(36f, rowY + 8f, 559f, rowY + 8f, borderPaint)
+        rowY += 26f
+      }
+    }
+
+    pdfDocument.finishPage(page)
+    FileOutputStream(pdfFile).use { out ->
+      pdfDocument.writeTo(out)
+    }
+    pdfDocument.close()
+    pdfFile
+  }
+}
+
+@Composable
+fun CustomersDataViewDialog(
+  customers: List<Customer>,
+  bookings: List<Booking>,
+  selectedCustomer: Customer? = null,
+  onDownloadPdf: (Customer?) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  val listToShow = if (selectedCustomer != null) listOf(selectedCustomer) else customers
+
+  CrmFormModalShell(
+    badgeText = "CUSTOMERS DATA VIEW",
+    badgeBg = KpiBlueBg,
+    badgeFg = SidebarActiveBlue,
+    title = if (selectedCustomer != null) "Customer Details: ${selectedCustomer.name}" else "Customers Data View (${customers.size})",
+    subtitle = "Complete view of saved Customer Name, Address, Mobile Number, Company, and Total Trips.",
+    primaryButtonText = "Download PDF",
+    primaryButtonColor = NewBookingGreen,
+    onDismiss = onDismiss,
+    onConfirm = {
+      onDismiss()
+      onDownloadPdf(selectedCustomer)
+    }
+  ) {
+    if (listToShow.isEmpty()) {
+      Text(
+        text = "No saved customer records available.",
+        fontSize = 13.sp,
+        color = TextSecondarySlate
+      )
+    } else {
+      listToShow.forEachIndexed { index, c ->
+        val matchingBookings = remember(c, bookings) {
+          bookings.filter {
+            it.customerName.equals(c.name, ignoreCase = true) ||
+              (c.phone.isNotBlank() && it.customerPhone == c.phone)
+          }
+        }
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(CardSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .padding(14.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Text(
+            text = "${index + 1}. ${c.name}",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 15.sp,
+            color = TextPrimaryDark
+          )
+          HorizontalDivider(color = CardBorder)
+          InvoiceLineRow("Customer Name", c.name)
+          if (c.companyName.isNotBlank()) {
+            InvoiceLineRow("Company Name", c.companyName)
+          }
+          InvoiceLineRow("Address", c.address.ifBlank { c.companyName.ifBlank { "N/A" } })
+          InvoiceLineRow("Mobile Number", c.phone.ifBlank { "N/A" })
+          if (c.email.isNotBlank()) {
+            InvoiceLineRow("Email", c.email)
+          }
+          if (c.gstin.isNotBlank()) {
+            InvoiceLineRow("Customer GSTIN", c.gstin)
+          }
+          InvoiceLineRow("Total Trips", c.totalBookings.toString())
+          if (c.totalBilled > 0L) {
+            InvoiceLineRow("Total Billed Amount", formatInr(c.totalBilled))
+          }
+          if (matchingBookings.isNotEmpty()) {
+            HorizontalDivider(color = CardBorder)
+            Text(
+              text = "Recent Trips (${matchingBookings.size}):",
+              fontSize = 11.sp,
+              fontWeight = FontWeight.ExtraBold,
+              color = SidebarActiveBlue
+            )
+            matchingBookings.take(5).forEach { b ->
+              Text(
+                text = "• ${com.example.data.formatToDdMmYyyy(b.tripDate)}: ${b.pickupLocation} → ${b.dropLocation} (${b.vehicleCategory} ${b.vehicleModel}) • ${formatInr(b.totalAmount)}",
+                fontSize = 11.sp,
+                color = TextSecondarySlate
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun CustomerDataPdfDownloadDialog(
+  customers: List<Customer>,
+  bookings: List<Booking>,
+  agencyName: String,
+  agencyGstin: String,
+  selectedCustomer: Customer? = null,
+  onDismiss: () -> Unit,
+) {
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+  var generatedFile by remember { mutableStateOf<File?>(null) }
+  var errorText by remember { mutableStateOf<String?>(null) }
+  var statusFeedback by remember { mutableStateOf<String?>(null) }
+
+  val targetCustomers = if (selectedCustomer != null) listOf(selectedCustomer) else customers
+  val defaultPdfName = remember(selectedCustomer) {
+    if (selectedCustomer != null) {
+      "Customer_Data_${selectedCustomer.name.replace(" ", "_")}.pdf"
+    } else {
+      "Customers_Data_Report.pdf"
+    }
+  }
+
+  LaunchedEffect(customers, bookings, selectedCustomer, agencyName, agencyGstin) {
+    val result = generateCustomersDataPdf(
+      context = context,
+      customers = customers,
+      bookings = bookings,
+      agencyName = agencyName,
+      agencyGstin = agencyGstin,
+      selectedCustomer = selectedCustomer
+    )
+    result.fold(
+      onSuccess = { file -> generatedFile = file },
+      onFailure = { err -> errorText = err.localizedMessage ?: "Failed to generate Customer Data PDF" }
+    )
+  }
+
+  val saveCustomerPdfLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument("application/pdf")
+  ) { destUri: Uri? ->
+    val file = generatedFile
+    if (destUri != null && file != null) {
+      scope.launch {
+        copyInvoicePdfToUri(file, destUri, context).fold(
+          onSuccess = {
+            statusFeedback = "Saved Customers Data PDF to your device!"
+            onDismiss()
+          },
+          onFailure = { e ->
+            errorText = "Failed to save PDF: ${e.localizedMessage}"
+          }
+        )
+      }
+    }
+  }
+
+  CrmFormModalShell(
+    badgeText = "CUSTOMER DATA PDF",
+    badgeBg = KpiGreenBg,
+    badgeFg = NewBookingGreen,
+    title = if (selectedCustomer != null) "Download Customer PDF: ${selectedCustomer.name}" else "Download Customers Data PDF",
+    subtitle = "Export saved Customer Name, Address, Mobile Number, and Total Trips as PDF.",
+    primaryButtonText = "Download / Save PDF",
+    primaryButtonColor = NewBookingGreen,
+    onDismiss = onDismiss,
+    onConfirm = {
+      saveCustomerPdfLauncher.launch(defaultPdfName)
+    }
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(14.dp))
+        .background(CardSurface)
+        .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+        .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Text(
+        text = if (selectedCustomer != null) "Customer Profile Summary" else "Customers Data Summary",
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 14.sp,
+        color = SidebarActiveBlue
+      )
+      HorizontalDivider(color = CardBorder)
+      InvoiceLineRow("Customers Included", targetCustomers.size.toString())
+      InvoiceLineRow("Total Combined Trips", targetCustomers.sumOf { it.totalBookings }.toString())
+      if (selectedCustomer != null) {
+        InvoiceLineRow("Customer Name", selectedCustomer.name)
+        InvoiceLineRow("Address", selectedCustomer.address.ifBlank { selectedCustomer.companyName.ifBlank { "N/A" } })
+        InvoiceLineRow("Mobile Number", selectedCustomer.phone.ifBlank { "N/A" })
+      }
+    }
+
+    if (errorText != null) {
+      Text(errorText ?: "", color = Color.Red, fontSize = 12.sp)
+    }
+    if (statusFeedback != null) {
+      Text(statusFeedback ?: "", color = KpiGreenIcon, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Button(
+        onClick = {
+          saveCustomerPdfLauncher.launch(defaultPdfName)
+        },
+        enabled = generatedFile != null,
+        colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("save_customer_data_pdf_button")
+      ) {
+        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Download / Save Customers Data PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      }
+
+      OutlinedButton(
+        onClick = {
+          generatedFile?.let { file ->
+            shareOrOpenInvoicePdf(context, file, "Customer_Data", openDirectly = false)
+          }
+        },
+        enabled = generatedFile != null,
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Share Customers Data PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      }
+
+      OutlinedButton(
+        onClick = {
+          generatedFile?.let { file ->
+            shareOrOpenInvoicePdf(context, file, "Customer_Data", openDirectly = true)
+          }
+        },
+        enabled = generatedFile != null,
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("View Customers Data PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      }
+    }
+  }
+}
+

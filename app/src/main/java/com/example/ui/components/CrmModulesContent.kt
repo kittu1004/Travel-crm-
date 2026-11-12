@@ -127,11 +127,6 @@ fun CrmModuleSectionHeader(
           color = TextPrimaryDark,
           fontWeight = FontWeight.ExtraBold
         )
-        Text(
-          text = subtitle,
-          style = MaterialTheme.typography.bodyMedium,
-          color = TextSecondarySlate
-        )
       }
     }
 
@@ -1070,6 +1065,11 @@ fun CrmModuleDispatcher(
         result
       }
 
+      var showCustomersViewDialog by remember { mutableStateOf(false) }
+      var showCustomerPdfDialog by remember { mutableStateOf(false) }
+      var activeCustomerForDialog by remember { mutableStateOf<Customer?>(null) }
+      var showInlineCustomersView by remember { mutableStateOf(false) }
+
       CrmModuleSectionHeader(
         title = "Customer Data",
         subtitle = "Saved customer details: Customer Name, Address, Mobile Number, and Total Trips.",
@@ -1077,6 +1077,91 @@ fun CrmModuleDispatcher(
         onActionClick = onOpenAddCustomer,
         onBackToDashboard = onBackToDashboard
       )
+
+      // Customer Data Options Card: Show Customers Data View & Download PDF (Stacked Up and Down)
+      Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, CardBorder),
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 12.dp)
+      ) {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(14.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Button(
+            onClick = {
+              activeCustomerForDialog = null
+              showInlineCustomersView = !showInlineCustomersView
+              showCustomersViewDialog = true
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("show_customers_data_view_button")
+          ) {
+            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Show Customers Data View", fontWeight = FontWeight.Bold, color = Color.White)
+          }
+
+          Button(
+            onClick = {
+              activeCustomerForDialog = null
+              showCustomerPdfDialog = true
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("download_customers_pdf_button")
+          ) {
+            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Download PDF", fontWeight = FontWeight.Bold, color = Color.White)
+          }
+        }
+      }
+
+      if (showInlineCustomersView && mergedCustomers.isNotEmpty()) {
+        Card(
+          shape = RoundedCornerShape(14.dp),
+          colors = CardDefaults.cardColors(containerColor = KpiBlueBg.copy(alpha = 0.4f)),
+          border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.4f)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+        ) {
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Text(
+              text = "Customers Data View Summary (${mergedCustomers.size} Saved Records)",
+              fontWeight = FontWeight.ExtraBold,
+              fontSize = 14.sp,
+              color = SidebarActiveBlue
+            )
+            HorizontalDivider(color = CardBorder)
+            mergedCustomers.forEachIndexed { idx, cust ->
+              Text(
+                text = "${idx + 1}. ${cust.name} • Mobile: ${cust.phone.ifBlank { "N/A" }} • Address: ${cust.address.ifBlank { cust.companyName.ifBlank { "N/A" } }} • Total Trips: ${cust.totalBookings}",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimaryDark
+              )
+            }
+          }
+        }
+      }
+
       if (mergedCustomers.isEmpty()) {
         EmptyModuleCard("No saved customer records yet. Save a booking or tap 'Add Customer'.")
       } else {
@@ -1088,15 +1173,14 @@ fun CrmModuleDispatcher(
               border = BorderStroke(1.dp, CardBorder),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Row(
+              Column(
                 modifier = Modifier
                   .fillMaxWidth()
                   .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(10.dp)
               ) {
                 Column(
-                  modifier = Modifier.weight(1f),
+                  modifier = Modifier.fillMaxWidth(),
                   verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                   Text(
@@ -1105,6 +1189,14 @@ fun CrmModuleDispatcher(
                     fontSize = 16.sp,
                     color = TextPrimaryDark
                   )
+                  if (c.companyName.isNotBlank()) {
+                    Text(
+                      text = "Company Name: ${c.companyName}",
+                      fontSize = 13.sp,
+                      color = TextPrimaryDark,
+                      fontWeight = FontWeight.Medium
+                    )
+                  }
                   Text(
                     text = "Address: ${c.address.ifBlank { c.companyName.ifBlank { "N/A" } }}",
                     fontSize = 13.sp,
@@ -1123,10 +1215,40 @@ fun CrmModuleDispatcher(
                     fontWeight = FontWeight.ExtraBold
                   )
                 }
-                Row(
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                  OutlinedButton(
+                    onClick = {
+                      activeCustomerForDialog = c
+                      showCustomersViewDialog = true
+                    },
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.5f)),
+                    modifier = Modifier.testTag("view_customer_${c.id}")
+                  ) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Customers Data View", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
+                  }
+                  OutlinedButton(
+                    onClick = {
+                      activeCustomerForDialog = c
+                      showCustomerPdfDialog = true
+                    },
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, KpiGreenIcon.copy(alpha = 0.5f)),
+                    modifier = Modifier.testTag("pdf_customer_${c.id}")
+                  ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = KpiGreenIcon, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Download PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = KpiGreenIcon)
+                  }
                   OutlinedButton(
                     onClick = { onEditCustomer(c) },
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
@@ -1157,6 +1279,30 @@ fun CrmModuleDispatcher(
             }
           }
         }
+      }
+
+      if (showCustomersViewDialog) {
+        CustomersDataViewDialog(
+          customers = mergedCustomers,
+          bookings = bookings,
+          selectedCustomer = activeCustomerForDialog,
+          onDownloadPdf = { targetCust ->
+            activeCustomerForDialog = targetCust
+            showCustomerPdfDialog = true
+          },
+          onDismiss = { showCustomersViewDialog = false }
+        )
+      }
+
+      if (showCustomerPdfDialog) {
+        CustomerDataPdfDownloadDialog(
+          customers = mergedCustomers,
+          bookings = bookings,
+          agencyName = agencyName,
+          agencyGstin = agencyGstin,
+          selectedCustomer = activeCustomerForDialog,
+          onDismiss = { showCustomerPdfDialog = false }
+        )
       }
     }
 

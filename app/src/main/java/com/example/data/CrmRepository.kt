@@ -35,7 +35,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
       ?: throw IllegalStateException("User must be signed in with Google before accessing Firestore.")
   }
 
-  // --- REALTIME OBSERVATION FLOWS ---
+  // --- REALTIME OBSERVATION FLOWS (ONLY USER-SAVED DATA, NO DEFAULT DATA) ---
 
   fun observeBookings(userId: String = requireUserId()): Flow<List<Booking>> = flow {
     val path = "users/$userId/bookings"
@@ -44,6 +44,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Booking::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            .filterNot { isSeededOrDefaultBooking(it) }
             .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
         }
         .catch { error ->
@@ -60,6 +61,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Driver::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            .filterNot { isSeededOrDefaultDriver(it) }
             .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
         }
         .catch { error ->
@@ -76,6 +78,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Vehicle::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            .filterNot { isSeededOrDefaultVehicle(it) }
             .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
         }
         .catch { error ->
@@ -92,6 +95,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Lead::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            .filterNot { isSeededOrDefaultLead(it) }
             .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
         }
         .catch { error ->
@@ -108,6 +112,7 @@ class CrmRepository(private val db: FirebaseFirestore) {
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Customer::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            .filterNot { isSeededOrDefaultCustomer(it) }
             .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
         }
         .catch { error ->
@@ -456,4 +461,211 @@ class CrmRepository(private val db: FirebaseFirestore) {
   suspend fun ensureDefaultDriversSeeded(): Result<Unit> = Result.success(Unit)
 
   suspend fun loadLiveDemoData(todayDate: String): Result<Unit> = Result.success(Unit)
+
+  fun isSeededOrDefaultDriver(d: Driver): Boolean {
+    val name = d.name.trim()
+    val lic = d.licenseNumber.trim()
+    val phone = d.phone.trim()
+    val veh = d.assignedVehicle.trim()
+    if (name.isBlank() && phone.isBlank() && lic.isBlank()) return true
+    if (name in DEFAULT_DRIVER_NAMES) return true
+    if (lic in DEFAULT_DRIVER_LICENSES) return true
+    if (phone in DEFAULT_DRIVER_PHONES) return true
+    if (veh in DEFAULT_DRIVER_VEHICLES) return true
+    return false
+  }
+
+  fun isSeededOrDefaultCustomer(c: Customer): Boolean {
+    val name = c.name.trim()
+    val phone = c.phone.trim()
+    val email = c.email.trim()
+    val gstin = c.gstin.trim()
+    if (name.isBlank() && phone.isBlank()) return true
+    if (name in DEFAULT_CUSTOMER_NAMES) return true
+    if (email in DEFAULT_CUSTOMER_EMAILS) return true
+    if (gstin in DEFAULT_CUSTOMER_GSTINS) return true
+    if (phone in DEFAULT_CUSTOMER_PHONES) return true
+    return false
+  }
+
+  fun isSeededOrDefaultVehicle(v: Vehicle): Boolean {
+    val reg = v.registrationNumber.trim()
+    val mod = v.modelName.trim()
+    if (reg.isBlank() && mod.isBlank()) return true
+    if (reg in DEFAULT_VEHICLE_REGS) return true
+    if (mod in DEFAULT_VEHICLE_MODELS) return true
+    return false
+  }
+
+  fun isSeededOrDefaultLead(l: Lead): Boolean {
+    val name = l.clientName.trim()
+    val phone = l.clientPhone.trim()
+    if (name.isBlank() && phone.isBlank()) return true
+    if (name in DEFAULT_LEAD_NAMES) return true
+    if (phone in DEFAULT_LEAD_PHONES) return true
+    return false
+  }
+
+  fun isSeededOrDefaultBooking(b: Booking): Boolean {
+    val cust = b.customerName.trim()
+    val veh = b.vehicleNumber.trim()
+    val drv = b.driverName.trim()
+    val phone = b.customerPhone.trim()
+    if (cust.isBlank() && b.companyName.isBlank() && b.pickupLocation.isBlank()) return true
+    if (cust in DEFAULT_CUSTOMER_NAMES) return true
+    if (veh in DEFAULT_VEHICLE_REGS) return true
+    if (drv in DEFAULT_DRIVER_NAMES) return true
+    if (phone in DEFAULT_CUSTOMER_PHONES) return true
+    return false
+  }
+
+  /**
+   * Automatically removes any previously seeded default/sample documents from Firestore
+   * so only genuine user-saved records remain in the database.
+   */
+  suspend fun purgeLegacyDefaultData(userId: String = requireUserId()) {
+    runCatching {
+      val userDoc = db.collection("users").document(userId)
+
+      val driversSnap = userDoc.collection("drivers").get().await()
+      for (doc in driversSnap.documents) {
+        val d = doc.toObject(Driver::class.java)
+        if (d != null && isSeededOrDefaultDriver(d)) {
+          doc.reference.delete().await()
+        }
+      }
+
+      val customersSnap = userDoc.collection("customers").get().await()
+      for (doc in customersSnap.documents) {
+        val c = doc.toObject(Customer::class.java)
+        if (c != null && isSeededOrDefaultCustomer(c)) {
+          doc.reference.delete().await()
+        }
+      }
+
+      val vehiclesSnap = userDoc.collection("vehicles").get().await()
+      for (doc in vehiclesSnap.documents) {
+        val v = doc.toObject(Vehicle::class.java)
+        if (v != null && isSeededOrDefaultVehicle(v)) {
+          doc.reference.delete().await()
+        }
+      }
+
+      val leadsSnap = userDoc.collection("leads").get().await()
+      for (doc in leadsSnap.documents) {
+        val l = doc.toObject(Lead::class.java)
+        if (l != null && isSeededOrDefaultLead(l)) {
+          doc.reference.delete().await()
+        }
+      }
+
+      val bookingsSnap = userDoc.collection("bookings").get().await()
+      for (doc in bookingsSnap.documents) {
+        val b = doc.toObject(Booking::class.java)
+        if (b != null && isSeededOrDefaultBooking(b)) {
+          doc.reference.delete().await()
+        }
+      }
+    }
+  }
+
+  companion object {
+    private val DEFAULT_DRIVER_NAMES = setOf(
+      "Ramesh Kumar",
+      "Suresh Gowda",
+      "Mohammed Irfan",
+      "Venkatesh Rao",
+      "New Fleet Driver",
+      "Manjunath Naik"
+    )
+    private val DEFAULT_DRIVER_LICENSES = setOf(
+      "KA01-2016-0089123",
+      "KA05-2018-0041290",
+      "KA03-2019-0076511",
+      "KA04-2015-0011842",
+      "KA01-2021-0098123",
+      "KA01-2020-0054120"
+    )
+    private val DEFAULT_DRIVER_PHONES = setOf(
+      "+91 98450 11223",
+      "+91 99001 44556",
+      "+91 97312 77889",
+      "+91 94480 33991",
+      "+91 98450 12345",
+      "+91 98450 55667"
+    )
+    private val DEFAULT_DRIVER_VEHICLES = setOf(
+      "Toyota Innova Crysta (KA-01-MG-4590)",
+      "Maruti Swift Dzire (KA-05-AB-2104)",
+      "Hyundai Creta (KA-03-NC-8812)",
+      "Force Urbania 17S (KA-04-TR-9901)",
+      "Toyota Innova (KA-01-AB-1001)"
+    )
+
+    private val DEFAULT_CUSTOMER_NAMES = setOf(
+      "Vikram Malhotra",
+      "Ananya Deshmukh",
+      "Karthik Subramanian",
+      "Apex Global Tech Retreat",
+      "Rohan Kulkarni",
+      "Walk-in Corporate Client",
+      "Walk-in Customer",
+      "Rajesh Sharma"
+    )
+    private val DEFAULT_CUSTOMER_EMAILS = setOf(
+      "vikram@infosys-travel.in",
+      "ananya@horizonpharma.co.in",
+      "karthik.s@gmail.com",
+      "customer@fleetcrm.in"
+    )
+    private val DEFAULT_CUSTOMER_GSTINS = setOf(
+      "29AABCA8912K1Z5",
+      "27AAACH4412P1Z2",
+      "UNREGISTERED-B2C",
+      "UNREGISTERED"
+    )
+    private val DEFAULT_CUSTOMER_PHONES = setOf(
+      "+91 98201 12244",
+      "+91 97654 32109",
+      "+91 94441 88776",
+      "+91 98442 66771",
+      "+91 98450 00000",
+      "+91 98201 00000",
+      "+91 98450 11223"
+    )
+
+    private val DEFAULT_VEHICLE_REGS = setOf(
+      "KA-05-AB-2104",
+      "KA-03-NC-8812",
+      "KA-01-MG-4590",
+      "KA-04-TR-9901",
+      "KA-01-FL-2026",
+      "KA-01-AB-7788"
+    )
+    private val DEFAULT_VEHICLE_MODELS = setOf(
+      "Maruti Suzuki Dzire ZXI",
+      "Hyundai Creta SX Diesel",
+      "Toyota Innova Crysta 2.4Z",
+      "Force Tempo Traveller 17-Seater",
+      "Toyota Innova Hycross",
+      "Toyota Innova Hycross ZX"
+    )
+
+    private val DEFAULT_LEAD_NAMES = setOf(
+      "Deepak Joshi",
+      "Meera Krishnan",
+      "Siddharth Verma",
+      "Prospective Traveler",
+      "Arjun Reddy",
+      "Website Visitor"
+    )
+    private val DEFAULT_LEAD_PHONES = setOf(
+      "+91 98801 55443",
+      "+91 99160 22334",
+      "+91 96112 88990",
+      "+91 99000 11223",
+      "+91 99801 22334",
+      "+91 98450 99001"
+    )
+  }
 }

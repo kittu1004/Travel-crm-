@@ -167,7 +167,7 @@ fun CrmDarkSidebar(
             modifier = Modifier.weight(1f)
           )
 
-          if (item.badgeCount != null) {
+          if (item.badgeCount != null && item.badgeCount > 0) {
             Spacer(modifier = Modifier.width(6.dp))
             Surface(
               color = if (isSelected) Color.White.copy(alpha = 0.22f) else DriverBadgePurple.copy(alpha = 0.55f),
@@ -232,19 +232,15 @@ fun CommandCenterHeader(
           Spacer(modifier = Modifier.width(10.dp))
         }
 
-        Column(modifier = Modifier.weight(1f)) {
-          Text(
-            text = "Dashboard View",
-            style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimaryDark,
-            fontWeight = FontWeight.ExtraBold
-          )
-          Spacer(modifier = Modifier.height(2.dp))
-          Text(
-            text = "Real-time fleet performance, revenue metrics, and booking control.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondarySlate
-          )
+        if (selectedSection == CrmSection.DASHBOARD) {
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+              text = "Dashboard View",
+              style = MaterialTheme.typography.headlineMedium,
+              color = TextPrimaryDark,
+              fontWeight = FontWeight.ExtraBold
+            )
+          }
         }
       }
     }

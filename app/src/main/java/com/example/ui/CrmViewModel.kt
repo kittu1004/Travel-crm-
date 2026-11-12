@@ -47,14 +47,20 @@ class CrmViewModel(
   private val _isActionBusy = MutableStateFlow(false)
   val isActionBusy: StateFlow<Boolean> = _isActionBusy.asStateFlow()
 
-  private val _agencyName = MutableStateFlow("Apex Fleet & Travel Operations")
+  private val _agencyName = MutableStateFlow("")
   val agencyName: StateFlow<String> = _agencyName.asStateFlow()
 
-  private val _agencyGstin = MutableStateFlow("29AABCF9901K1Z8")
+  private val _agencyGstin = MutableStateFlow("")
   val agencyGstin: StateFlow<String> = _agencyGstin.asStateFlow()
 
   private val _defaultGstPercent = MutableStateFlow(0)
   val defaultGstPercent: StateFlow<Int> = _defaultGstPercent.asStateFlow()
+
+  init {
+    viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+      repository.purgeLegacyDefaultData(currentUserId)
+    }
+  }
 
   val bookingsState: StateFlow<UiState<List<Booking>>> =
     repository.observeBookings(currentUserId)
@@ -715,8 +721,8 @@ class CrmViewModel(
   }
 
   fun updateSystemSettings(agency: String, gstin: String, gstSlab: Int) {
-    _agencyName.value = agency.ifBlank { "Apex Fleet & Travel Operations" }
-    _agencyGstin.value = gstin.ifBlank { "29AABCF9901K1Z8" }
+    _agencyName.value = agency.trim()
+    _agencyGstin.value = gstin.trim()
     _defaultGstPercent.value = gstSlab.coerceIn(0, 18)
     _statusBanner.value = "System settings & optional GST rate (${_defaultGstPercent.value}%) saved."
   }
