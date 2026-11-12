@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Download
@@ -30,9 +29,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,7 +42,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +62,7 @@ import com.example.data.Customer
 import com.example.data.Driver
 import com.example.data.Lead
 import com.example.data.Vehicle
+import com.example.data.formatToDdMmYyyy
 import com.example.ui.formatInr
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
@@ -75,7 +72,6 @@ import com.example.ui.theme.KpiBlueBg
 import com.example.ui.theme.KpiBlueIcon
 import com.example.ui.theme.KpiGreenBg
 import com.example.ui.theme.KpiGreenIcon
-import com.example.ui.theme.KpiOrangeBg
 import com.example.ui.theme.KpiOrangeIcon
 import com.example.ui.theme.KpiPurpleBg
 import com.example.ui.theme.KpiPurpleIcon
@@ -85,7 +81,6 @@ import com.example.ui.theme.KpiTealBg
 import com.example.ui.theme.KpiTealIcon
 import com.example.ui.theme.NewBookingGreen
 import com.example.ui.theme.SidebarActiveBlue
-import com.example.ui.theme.TextMutedUppercase
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondarySlate
 
@@ -171,9 +166,12 @@ fun CrmModuleDispatcher(
   userEmail: String,
   onBackToDashboard: () -> Unit,
   onOpenNewBooking: () -> Unit,
+  onOpenNewInvoice: () -> Unit = onOpenNewBooking,
+  onDownloadGstDetails: () -> Unit = {},
   onOpenAddLead: () -> Unit,
   onOpenAddDriver: () -> Unit,
   onOpenAddVehicle: () -> Unit,
+  onOpenAddVehicleMaintenance: () -> Unit = onOpenAddVehicle,
   onOpenAddCustomer: () -> Unit,
   onConvertLead: (Lead) -> Unit,
   onDeleteLead: (String) -> Unit,
@@ -194,6 +192,7 @@ fun CrmModuleDispatcher(
   onEditLead: (Lead) -> Unit = {},
   onEditDriver: (Driver) -> Unit = {},
   onEditVehicle: (Vehicle) -> Unit = {},
+  onEditVehicleMaintenance: (Vehicle) -> Unit = onEditVehicle,
   onEditCustomer: (Customer) -> Unit = {},
   onDeleteCustomer: (Customer) -> Unit = {},
   onEditTripExpenses: (Booking) -> Unit = {},
@@ -203,14 +202,14 @@ fun CrmModuleDispatcher(
     CrmSection.LEADS -> {
       CrmModuleSectionHeader(
         title = "Leads & Inquiries Pipeline",
-        subtitle = "Track website, phone, and corporate inquiries and convert to bookings in one tap.",
+        subtitle = "Track saved inquiries and convert to bookings in one tap.",
         actionLabel = "Add Lead",
         onActionClick = onOpenAddLead,
         onBackToDashboard = onBackToDashboard
       )
       if (leads.isEmpty()) {
         EmptyModuleCard(
-          message = "No travel leads yet. Tap 'Add Lead' to create an inquiry."
+          message = "No saved travel leads yet. Tap 'Add Lead' to create an inquiry."
         )
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -290,14 +289,14 @@ fun CrmModuleDispatcher(
     CrmSection.BOOKING_HISTORY -> {
       CrmModuleSectionHeader(
         title = "Booking History",
-        subtitle = "Manage fleet trips, customer & company records, driver details, and invoices.",
+        subtitle = "Manage saved fleet trips, customer & company records, vehicle model, driver details, and invoices.",
         actionLabel = "New Booking",
         onActionClick = onOpenNewBooking,
         onBackToDashboard = onBackToDashboard
       )
       if (bookings.isEmpty()) {
         EmptyModuleCard(
-          message = "No bookings recorded yet. Tap 'New Booking' to create a booking."
+          message = "No saved bookings yet. Tap 'New Booking' to create a booking."
         )
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -316,8 +315,9 @@ fun CrmModuleDispatcher(
                 ) {
                   Column(modifier = Modifier.weight(1f)) {
                     val companySuffix = if (booking.companyName.isNotBlank()) " • ${booking.companyName}" else ""
+                    val modelSuffix = if (booking.vehicleModel.isNotBlank()) " • ${booking.vehicleModel}" else ""
                     Text(
-                      "${booking.customerName}$companySuffix (${booking.vehicleCategory})",
+                      "${booking.customerName}$companySuffix (${booking.vehicleCategory}$modelSuffix)",
                       fontWeight = FontWeight.Bold,
                       fontSize = 16.sp,
                       color = TextPrimaryDark
@@ -344,8 +344,9 @@ fun CrmModuleDispatcher(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 val driverPhoneInfo = if (booking.driverPhone.isNotBlank()) " (${booking.driverPhone})" else ""
+                val modelInfo = if (booking.vehicleModel.isNotBlank()) "${booking.vehicleModel} - " else ""
                 Text(
-                  "Driver: ${booking.driverName}$driverPhoneInfo • Vehicle: ${booking.vehicleNumber} • Date: ${com.example.data.formatToDdMmYyyy(booking.tripDate)}",
+                  "Driver: ${booking.driverName}$driverPhoneInfo • Vehicle: $modelInfo${booking.vehicleNumber} • Date: ${formatToDdMmYyyy(booking.tripDate)}",
                   fontSize = 12.sp,
                   color = TextSecondarySlate
                 )
@@ -429,13 +430,13 @@ fun CrmModuleDispatcher(
     CrmSection.INVOICES_BILLING -> {
       CrmModuleSectionHeader(
         title = "Invoices History",
-        subtitle = "Trip & tax invoices with base fare, toll/parking charges, optional GST, and PDF export.",
-        actionLabel = null,
-        onActionClick = null,
+        subtitle = "Generate new invoices, view saved trip & tax invoices, and download PDF invoices.",
+        actionLabel = "Generate New Invoice",
+        onActionClick = onOpenNewInvoice,
         onBackToDashboard = onBackToDashboard
       )
       if (bookings.isEmpty()) {
-        EmptyModuleCard("No invoices generated yet.")
+        EmptyModuleCard("No saved invoices yet. Tap 'Generate New Invoice' above to create an invoice.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           bookings.forEachIndexed { idx, b ->
@@ -460,8 +461,9 @@ fun CrmModuleDispatcher(
                     fontSize = 15.sp,
                     color = TextPrimaryDark
                   )
+                  val modelLabel = if (b.vehicleModel.isNotBlank()) " • Model: ${b.vehicleModel}" else ""
                   Text(
-                    text = "Date: ${com.example.data.formatToDdMmYyyy(b.tripDate)} • Driver: ${b.driverName}${if (b.driverPhone.isNotBlank()) " (${b.driverPhone})" else ""}",
+                    text = "Date: ${formatToDdMmYyyy(b.tripDate)} • Category: ${b.vehicleCategory}$modelLabel • Driver: ${b.driverName}${if (b.driverPhone.isNotBlank()) " (${b.driverPhone})" else ""}",
                     fontSize = 11.sp,
                     color = TextSecondarySlate
                   )
@@ -536,7 +538,9 @@ fun CrmModuleDispatcher(
 
       CrmModuleSectionHeader(
         title = "GST Tax Details",
-        subtitle = "SAC 9964 Passenger Transport GST details, CGST/SGST split, and Collected Net GST.",
+        subtitle = "SAC 9964 Passenger Transport GST details, CGST/SGST split, Collected Net GST, and PDF download.",
+        actionLabel = "Download GST Details",
+        onActionClick = onDownloadGstDetails,
         onBackToDashboard = onBackToDashboard
       )
       Card(
@@ -554,47 +558,69 @@ fun CrmModuleDispatcher(
           TaxRow("Gross Output GST Collected", formatInr(totalGst), isBold = true)
           HorizontalDivider(color = CardBorder)
           TaxRow("Collected Net GST", formatInr(totalGst), isBold = true, color = KpiTealIcon)
+
+          Spacer(modifier = Modifier.height(6.dp))
+          Button(
+            onClick = onDownloadGstDetails,
+            colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("download_gst_details_button")
+          ) {
+            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Download GST Tax Details (PDF)", fontWeight = FontWeight.Bold, color = Color.White)
+          }
         }
       }
     }
 
     CrmSection.VEHICLES_MAINTENANCE -> {
-      var selectedVehicleTab by remember { mutableStateOf(0) } // 0 = Add Vehicle Section, 1 = Workshop Maintenance
+      // 0 = Vehicle Details & Vehicle Documents, 1 = Vehicle Maintenance Section
+      var selectedVehicleTab by remember { mutableStateOf(0) }
 
       CrmModuleSectionHeader(
         title = "Vehicles Maintenance",
-        subtitle = "Manage fleet vehicles, manufacturing year, fleet categories, and workshop maintenance.",
-        actionLabel = "Add Vehicle",
-        onActionClick = onOpenAddVehicle,
+        subtitle = if (selectedVehicleTab == 0) {
+          "Vehicle details & vehicle documents with document expiry dates in one form."
+        } else {
+          "Vehicle maintenance section: present odometer km, present service date & km, next service date & km, and parts changed."
+        },
+        actionLabel = if (selectedVehicleTab == 0) "Add Vehicle & Documents" else "Add Vehicle Maintenance",
+        onActionClick = if (selectedVehicleTab == 0) onOpenAddVehicle else onOpenAddVehicleMaintenance,
         onBackToDashboard = onBackToDashboard
       )
 
-      // Tabs: Add Vehicle Section | Workshop Maintenance
-      Row(
+      // Vertical Tabs (Up and Down, not side-by-side)
+      Column(
         modifier = Modifier
           .fillMaxWidth()
           .padding(bottom = 12.dp)
           .clip(RoundedCornerShape(12.dp))
           .background(CardSurface)
           .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-          .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+          .padding(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        val tabs = listOf("Add Vehicle Section", "Workshop Maintenance")
+        val tabs = listOf(
+          "1. Vehicle Details & Vehicle Documents (with Document Expiry Dates)",
+          "2. Vehicle Maintenance Section (Odometer, Service Dates & Parts Changed)"
+        )
         tabs.forEachIndexed { index, tabTitle ->
           val isSelected = selectedVehicleTab == index
           Surface(
             color = if (isSelected) SidebarActiveBlue else Color.Transparent,
             shape = RoundedCornerShape(9.dp),
             modifier = Modifier
-              .weight(1f)
+              .fillMaxWidth()
               .clip(RoundedCornerShape(9.dp))
               .clickable { selectedVehicleTab = index }
               .testTag("vehicles_module_tab_$index")
           ) {
             Box(
-              modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
-              contentAlignment = Alignment.Center
+              modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+              contentAlignment = Alignment.CenterStart
             ) {
               Text(
                 text = tabTitle,
@@ -608,7 +634,13 @@ fun CrmModuleDispatcher(
       }
 
       if (vehicles.isEmpty()) {
-        EmptyModuleCard("No fleet vehicles registered yet. Tap 'Add Vehicle' to add a vehicle.")
+        EmptyModuleCard(
+          if (selectedVehicleTab == 0) {
+            "No saved vehicles yet. Tap 'Add Vehicle & Documents' to add a vehicle."
+          } else {
+            "No saved vehicle maintenance records yet. Tap 'Add Vehicle Maintenance' to add a maintenance record."
+          }
+        )
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           vehicles.forEach { v ->
@@ -619,7 +651,7 @@ fun CrmModuleDispatcher(
               modifier = Modifier.fillMaxWidth()
             ) {
               if (selectedVehicleTab == 0) {
-                // Tab 1: Add Vehicle Section (Vehicle Name/Make/Model, Manufacturing Year, Fleet Category, Operational Status Removed)
+                // Tab 1: Vehicle Details & Vehicle Documents (with Expiry Dates)
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -628,13 +660,13 @@ fun CrmModuleDispatcher(
                   ) {
                     Column(modifier = Modifier.weight(1f)) {
                       Text(
-                        text = v.modelName,
+                        text = v.modelName.ifBlank { "Unnamed Vehicle" },
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 16.sp,
                         color = TextPrimaryDark
                       )
                       Text(
-                        text = "Registration No: ${v.registrationNumber} • Manufacturing Year: ${v.manufacturingYear.ifBlank { "2024" }}",
+                        text = "Registration No: ${v.registrationNumber.ifBlank { "N/A" }} • Manufacturing Year: ${v.manufacturingYear.ifBlank { "N/A" }}",
                         fontSize = 12.sp,
                         color = TextSecondarySlate
                       )
@@ -644,7 +676,7 @@ fun CrmModuleDispatcher(
                       shape = RoundedCornerShape(8.dp)
                     ) {
                       Text(
-                        text = "Category: ${v.category}",
+                        text = "Category: ${v.category.ifBlank { "Sedan" }}",
                         color = SidebarActiveBlue,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -653,6 +685,24 @@ fun CrmModuleDispatcher(
                     }
                   }
 
+                  HorizontalDivider(color = CardBorder)
+
+                  Text(
+                    text = "Insurance: ${v.insuranceDetails.ifBlank { "Not specified" }} • Expiry Date: ${formatToDdMmYyyy(v.insuranceExpiryDate).ifBlank { "Not set" }}",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark
+                  )
+                  Text(
+                    text = "Fitness (FC): ${v.fitnessDetails.ifBlank { "Not specified" }} • Expiry Date: ${formatToDdMmYyyy(v.fitnessExpiryDate).ifBlank { "Not set" }}",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark
+                  )
+                  Text(
+                    text = "Pollution (PUC): ${v.pollutionDetails.ifBlank { "Not specified" }} • Expiry Date: ${formatToDdMmYyyy(v.pollutionExpiryDate).ifBlank { "Not set" }}",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark
+                  )
+
                   Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -665,7 +715,7 @@ fun CrmModuleDispatcher(
                     ) {
                       Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Vehicle", fontSize = 11.sp)
+                      Text("Edit Vehicle & Documents", fontSize = 11.sp)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
@@ -674,7 +724,7 @@ fun CrmModuleDispatcher(
                   }
                 }
               } else {
-                // Tab 2: Workshop Maintenance
+                // Tab 2: Vehicle Maintenance Section (Present Odometer KM, Present Service Date & KM, Next Service Date & KM, Parts Changed)
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -682,13 +732,13 @@ fun CrmModuleDispatcher(
                     verticalAlignment = Alignment.CenterVertically
                   ) {
                     Text(
-                      text = "${v.modelName} (${v.registrationNumber})",
+                      text = "${v.modelName.ifBlank { "Vehicle" }} (${v.registrationNumber.ifBlank { "N/A" }})",
                       fontWeight = FontWeight.ExtraBold,
                       fontSize = 16.sp,
                       color = TextPrimaryDark
                     )
                     Text(
-                      text = "Spend: ${formatInr(v.maintenanceCost)}",
+                      text = "Service Cost: ${formatInr(v.maintenanceCost)}",
                       fontWeight = FontWeight.Bold,
                       fontSize = 13.sp,
                       color = KpiOrangeIcon
@@ -696,26 +746,36 @@ fun CrmModuleDispatcher(
                   }
 
                   Text(
-                    text = "Service Date: ${com.example.data.formatToDdMmYyyy(v.serviceDate.ifBlank { v.nextServiceDate })} • Next Service Due: ${com.example.data.formatToDdMmYyyy(v.nextServiceDate)}",
+                    text = "Present Odometer KM: ${v.presentRunningKilometers} km",
+                    fontSize = 13.sp,
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.Bold
+                  )
+                  Text(
+                    text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
                     fontSize = 12.sp,
                     color = SidebarActiveBlue,
                     fontWeight = FontWeight.SemiBold
                   )
                   Text(
-                    text = "Service KM: ${v.serviceKilometers} km • Present Running KM: ${v.presentRunningKilometers} km • Next Service KM: ${v.nextServiceKilometers} km",
+                    text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
                     fontSize = 12.sp,
-                    color = TextPrimaryDark
+                    color = KpiGreenIcon,
+                    fontWeight = FontWeight.SemiBold
                   )
                   Text(
-                    text = "Insurance: ${v.insuranceDetails.ifBlank { "Active" }} • Fitness: ${v.fitnessDetails.ifBlank { "Valid" }} • Pollution: ${v.pollutionDetails.ifBlank { "Valid" }}",
+                    text = "Parts Changed in Present Service: ${v.partsChanged.ifBlank { "Not specified" }}",
                     fontSize = 12.sp,
-                    color = TextSecondarySlate
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.SemiBold
                   )
-                  Text(
-                    text = "Next Service Notes: ${v.serviceNotes}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
-                  )
+                  if (v.serviceNotes.isNotBlank()) {
+                    Text(
+                      text = "Service Notes: ${v.serviceNotes}",
+                      fontSize = 12.sp,
+                      color = TextSecondarySlate
+                    )
+                  }
 
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -723,13 +783,13 @@ fun CrmModuleDispatcher(
                     verticalAlignment = Alignment.CenterVertically
                   ) {
                     OutlinedButton(
-                      onClick = { onEditVehicle(v) },
+                      onClick = { onEditVehicleMaintenance(v) },
                       contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                       shape = RoundedCornerShape(8.dp)
                     ) {
                       Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Workshop Log", fontSize = 11.sp)
+                      Text("Edit Vehicle Maintenance", fontSize = 11.sp)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
@@ -746,66 +806,99 @@ fun CrmModuleDispatcher(
 
     CrmSection.DRIVER_ROSTER -> {
       CrmModuleSectionHeader(
-        title = "Driver Roster (${drivers.size} Active)",
-        subtitle = "Commercial badge verification, vehicle assignment, duty status, and trip counts.",
+        title = "Driver Roster (${drivers.size} Saved)",
+        subtitle = "Driver name, phone, address, driving license, Aadhar number, selfie photo, and uploaded documents.",
         actionLabel = "Add Driver",
         onActionClick = onOpenAddDriver,
         onBackToDashboard = onBackToDashboard
       )
-      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        drivers.forEach { d ->
-          Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = CardSurface),
-            border = BorderStroke(1.dp, CardBorder),
-            modifier = Modifier.fillMaxWidth()
-          ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
+      if (drivers.isEmpty()) {
+        EmptyModuleCard("No saved drivers yet. Tap 'Add Driver' to add a driver.")
+      } else {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          drivers.forEach { d ->
+            Card(
+              shape = RoundedCornerShape(14.dp),
+              colors = CardDefaults.cardColors(containerColor = CardSurface),
+              border = BorderStroke(1.dp, CardBorder),
+              modifier = Modifier.fillMaxWidth()
             ) {
-              Column(modifier = Modifier.weight(1f)) {
-                Text(d.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimaryDark)
-                Text("${d.phone} • License: ${d.licenseNumber}", fontSize = 12.sp, color = TextSecondarySlate)
-                Text("Vehicle: ${d.assignedVehicle} (${d.vehicleCategory})", fontSize = 12.sp, color = SidebarActiveBlue)
-                Text(
-                  "Completed Trips: ${d.tripsCompleted} • Earnings: ${formatInr(d.earningsTotal)}",
-                  fontSize = 12.sp,
-                  fontWeight = FontWeight.SemiBold,
-                  color = TextPrimaryDark
-                )
-              }
-              Column(horizontalAlignment = Alignment.End) {
-                Surface(
-                  color = when (d.status) {
-                    "Available" -> KpiGreenBg
-                    "On Trip" -> KpiBlueBg
-                    else -> KpiAmberBg
-                  },
-                  shape = RoundedCornerShape(8.dp),
-                  modifier = Modifier.clickable { onCycleDriverStatus(d) }
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+              ) {
+                Column(
+                  modifier = Modifier.weight(1f),
+                  verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                   Text(
-                    text = "${d.status} ↻",
-                    color = when (d.status) {
-                      "Available" -> KpiGreenIcon
-                      "On Trip" -> KpiBlueIcon
-                      else -> KpiAmberIcon
-                    },
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    text = "Driver Name: ${d.name.ifBlank { "N/A" }}",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    color = TextPrimaryDark
                   )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                  IconButton(onClick = { onEditDriver(d) }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Driver", tint = SidebarActiveBlue)
+                  Text(
+                    text = "Phone: ${d.phone.ifBlank { "N/A" }} • Address: ${d.address.ifBlank { "Not specified" }}",
+                    fontSize = 12.sp,
+                    color = TextSecondarySlate
+                  )
+                  Text(
+                    text = "Driving License No: ${d.licenseNumber.ifBlank { "N/A" }} • Aadhar Card No: ${d.aadharNumber.ifBlank { "Not specified" }}",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.SemiBold
+                  )
+                  Text(
+                    text = "Selfie Photo: ${d.selfiePhotoUri.ifBlank { "Not uploaded" }}",
+                    fontSize = 12.sp,
+                    color = KpiTealIcon,
+                    fontWeight = FontWeight.SemiBold
+                  )
+                  Text(
+                    text = "Uploaded Documents: ${d.documentsUploaded.ifBlank { "No documents uploaded" }}",
+                    fontSize = 12.sp,
+                    color = SidebarActiveBlue
+                  )
+                  if (d.assignedVehicle.isNotBlank()) {
+                    Text(
+                      text = "Assigned Vehicle: ${d.assignedVehicle} (${d.vehicleCategory.ifBlank { "Sedan" }})",
+                      fontSize = 12.sp,
+                      color = TextSecondarySlate
+                    )
                   }
-                  IconButton(onClick = { onDeleteDriver(d.id) }) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Driver", tint = TextSecondarySlate)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                  Surface(
+                    color = when (d.status) {
+                      "Available" -> KpiGreenBg
+                      "On Trip" -> KpiBlueBg
+                      else -> KpiAmberBg
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.clickable { onCycleDriverStatus(d) }
+                  ) {
+                    Text(
+                      text = "${d.status} ↻",
+                      color = when (d.status) {
+                        "Available" -> KpiGreenIcon
+                        "On Trip" -> KpiBlueIcon
+                        else -> KpiAmberIcon
+                      },
+                      fontSize = 11.sp,
+                      fontWeight = FontWeight.Bold,
+                      modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                  }
+                  Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { onEditDriver(d) }) {
+                      Icon(Icons.Default.Edit, contentDescription = "Edit Driver", tint = SidebarActiveBlue)
+                    }
+                    IconButton(onClick = { onDeleteDriver(d.id) }) {
+                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Driver", tint = TextSecondarySlate)
+                    }
                   }
                 }
               }
@@ -824,7 +917,7 @@ fun CrmModuleDispatcher(
         onBackToDashboard = onBackToDashboard
       )
       if (bookings.isEmpty()) {
-        EmptyModuleCard("No trips logged yet.")
+        EmptyModuleCard("No saved trips logged yet.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           bookings.forEach { b ->
@@ -882,9 +975,16 @@ fun CrmModuleDispatcher(
 
     CrmSection.EARNINGS_HISTORY -> {
       val valid = bookings.filter { it.tripStatus != "Cancelled" }
-      val byCategory = listOf("Sedans", "Compact SUVs", "SUVs", "Tourist Travellers").map { cat ->
-        cat to valid.filter { it.vehicleCategory == cat }.sumOf { it.totalAmount }
-      }
+      val sedanSum = valid.filter {
+        it.vehicleCategory.equals("Sedan", ignoreCase = true) ||
+          it.vehicleCategory.equals("Sedans", ignoreCase = true)
+      }.sumOf { it.totalAmount }
+      val byCategory = listOf(
+        "Sedan" to sedanSum,
+        "Compact SUVs" to valid.filter { it.vehicleCategory == "Compact SUVs" }.sumOf { it.totalAmount },
+        "SUVs" to valid.filter { it.vehicleCategory == "SUVs" }.sumOf { it.totalAmount },
+        "Tourist Travellers" to valid.filter { it.vehicleCategory == "Tourist Travellers" }.sumOf { it.totalAmount }
+      )
       CrmModuleSectionHeader(
         title = "Earnings History & Fleet Profitability",
         subtitle = "Breakdown of gross revenue across fleet categories and payment channels.",
@@ -972,13 +1072,13 @@ fun CrmModuleDispatcher(
 
       CrmModuleSectionHeader(
         title = "Customer Data",
-        subtitle = "Customer details synced from Booking History: Customer Name, Address, Mobile Number, and Total Trips.",
+        subtitle = "Saved customer details: Customer Name, Address, Mobile Number, and Total Trips.",
         actionLabel = "Add Customer",
         onActionClick = onOpenAddCustomer,
         onBackToDashboard = onBackToDashboard
       )
       if (mergedCustomers.isEmpty()) {
-        EmptyModuleCard("No customer records yet. Save a booking or tap 'Add Customer'.")
+        EmptyModuleCard("No saved customer records yet. Save a booking or tap 'Add Customer'.")
       } else {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           mergedCustomers.forEach { c ->
@@ -1063,56 +1163,44 @@ fun CrmModuleDispatcher(
     CrmSection.USER_ROLES -> {
       CrmModuleSectionHeader(
         title = "User Accounts & Access Roles",
-        subtitle = "Role-based access control for command center operators and dispatch staff.",
+        subtitle = "Signed-in operator account.",
         onBackToDashboard = onBackToDashboard
       )
-      val roles = listOf(
-        Triple(userEmail.ifBlank { "Signed-In Admin" }, "Super Admin (Command Center)", "Full Access: Revenue, GST, Fleet & Settings"),
-        Triple("dispatch@fleetcrm.in", "Fleet Dispatcher", "Bookings, Driver Roster & Trip Assignment"),
-        Triple("accounts@fleetcrm.in", "GST & Billing Executive", "Invoices, Receivables & Tax Filing"),
-        Triple("maintenance@fleetcrm.in", "Fleet Workshop Manager", "Vehicles Maintenance & Service Logs"),
-      )
-      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        roles.forEach { (email, role, perms) ->
-          Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = CardSurface),
-            border = BorderStroke(1.dp, CardBorder),
-            modifier = Modifier.fillMaxWidth()
+      Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, CardBorder),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Row(
+          modifier = Modifier.padding(16.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Box(
+            modifier = Modifier
+              .size(40.dp)
+              .clip(RoundedCornerShape(10.dp))
+              .background(KpiPurpleBg),
+            contentAlignment = Alignment.Center
           ) {
-            Row(
-              modifier = Modifier.padding(16.dp),
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-              Box(
-                modifier = Modifier
-                  .size(40.dp)
-                  .clip(RoundedCornerShape(10.dp))
-                  .background(KpiPurpleBg),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = KpiPurpleIcon)
-              }
-              Column(modifier = Modifier.weight(1f)) {
-                Text(role, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text(email, fontSize = 12.sp, color = SidebarActiveBlue)
-                Text(perms, fontSize = 12.sp, color = TextSecondarySlate)
-              }
-              StatusBadge("Active", KpiGreenBg, KpiGreenIcon)
-            }
+            Icon(Icons.Default.Person, contentDescription = null, tint = KpiPurpleIcon)
           }
+          Column(modifier = Modifier.weight(1f)) {
+            Text("Administrator", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(userEmail.ifBlank { "Signed-In User" }, fontSize = 12.sp, color = SidebarActiveBlue)
+            Text("Full Access: Dashboard View, Bookings, Invoices, GST & Fleet", fontSize = 12.sp, color = TextSecondarySlate)
+          }
+          StatusBadge("Active", KpiGreenBg, KpiGreenIcon)
         }
       }
     }
 
     CrmSection.REPORTS_EXPORT -> {
       val context = LocalContext.current
-      val directApkUrl = "https://github.com/kittu1004/Travel-crm-/releases/latest/download/FleetCRM-debug.apk"
-      val releasesUrl = "https://github.com/kittu1004/Travel-crm-/releases"
       CrmModuleSectionHeader(
-        title = "Reports, CSV Export & GitHub APK Release",
-        subtitle = "Generate audit-ready CSV reports or download the latest Debug APK from kittu1004/Travel-crm-.",
+        title = "Reports & CSV Export",
+        subtitle = "Generate and share audit-ready CSV reports for saved bookings, fleet revenue, and GST.",
         onBackToDashboard = onBackToDashboard
       )
       Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -1125,17 +1213,17 @@ fun CrmModuleDispatcher(
           Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Executive Fleet & Revenue Statement", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(
-              "Total Bookings: ${bookings.size} | Drivers: ${drivers.size} | Fleet Vehicles: ${vehicles.size} | Corporate Clients: ${customers.size}",
+              "Total Saved Bookings: ${bookings.size} | Saved Drivers: ${drivers.size} | Saved Vehicles: ${vehicles.size} | Saved Customers: ${customers.size}",
               fontSize = 13.sp,
               color = TextSecondarySlate
             )
             Button(
               onClick = {
                 val csvBuilder = StringBuilder()
-                csvBuilder.append("Customer,Category,Vehicle,Driver,Status,Payment,BaseINR,GSTINR,TotalINR\n")
+                csvBuilder.append("Customer,Category,VehicleModel,VehicleNo,Driver,Status,Payment,BaseINR,GSTINR,TotalINR\n")
                 bookings.forEach { b ->
                   csvBuilder.append(
-                    "${b.customerName},${b.vehicleCategory},${b.vehicleNumber},${b.driverName},${b.tripStatus},${b.paymentStatus},${b.baseAmount},${b.gstAmount},${b.totalAmount}\n"
+                    "${b.customerName},${b.vehicleCategory},${b.vehicleModel},${b.vehicleNumber},${b.driverName},${b.tripStatus},${b.paymentStatus},${b.baseAmount},${b.gstAmount},${b.totalAmount}\n"
                   )
                 }
                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -1154,51 +1242,6 @@ fun CrmModuleDispatcher(
             }
           }
         }
-
-        Card(
-          shape = RoundedCornerShape(16.dp),
-          colors = CardDefaults.cardColors(containerColor = CardSurface),
-          border = BorderStroke(1.dp, CardBorder),
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-              "GitHub Actions Direct APK Download (kittu1004/Travel-crm-)",
-              fontWeight = FontWeight.Bold,
-              fontSize = 16.sp,
-              color = TextPrimaryDark
-            )
-            Text(
-              "Direct Release Asset URL: $directApkUrl",
-              fontSize = 12.sp,
-              color = SidebarActiveBlue
-            )
-            FlowRow(
-              horizontalArrangement = Arrangement.spacedBy(10.dp),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              Button(
-                onClick = onOpenApkDownloadCenter,
-                colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.testTag("download_github_apk_button")
-              ) {
-                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Save / Download FleetCRM-debug.apk", fontWeight = FontWeight.Bold)
-              }
-              OutlinedButton(
-                onClick = {
-                  val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(releasesUrl))
-                  context.startActivity(intent)
-                },
-                shape = RoundedCornerShape(10.dp)
-              ) {
-                Text("Open GitHub Releases", fontWeight = FontWeight.SemiBold)
-              }
-            }
-          }
-        }
       }
     }
 
@@ -1209,7 +1252,7 @@ fun CrmModuleDispatcher(
 
       CrmModuleSectionHeader(
         title = "System Settings & Tariff Control",
-        subtitle = "Configure agency identity, GST slab percentage, demo data, and session security.",
+        subtitle = "Configure agency identity, optional GST slab percentage, and session security.",
         onBackToDashboard = onBackToDashboard
       )
       Card(
@@ -1234,16 +1277,17 @@ fun CrmModuleDispatcher(
           OutlinedTextField(
             value = gstSlabInput,
             onValueChange = { gstSlabInput = it.filter { ch -> ch.isDigit() } },
-            label = { Text("Default Passenger Transport GST % (5, 12, or 18)") },
+            label = { Text("Optional Passenger Transport GST % (0, 5, 12, or 18)") },
             modifier = Modifier.fillMaxWidth()
           )
-          Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
               onClick = {
-                onSaveSettings(nameInput, gstinInput, gstSlabInput.toIntOrNull() ?: 5)
+                onSaveSettings(nameInput, gstinInput, gstSlabInput.toIntOrNull() ?: 0)
               },
               colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
-              shape = RoundedCornerShape(10.dp)
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier.fillMaxWidth()
             ) {
               Text("Save Configuration", fontWeight = FontWeight.Bold)
             }
@@ -1251,7 +1295,9 @@ fun CrmModuleDispatcher(
               onClick = onSignOut,
               shape = RoundedCornerShape(10.dp),
               border = BorderStroke(1.dp, KpiRedIcon),
-              modifier = Modifier.testTag("sign_out_button")
+              modifier = Modifier
+                .fillMaxWidth()
+                .testTag("sign_out_button")
             ) {
               Icon(Icons.Default.Logout, contentDescription = null, tint = KpiRedIcon, modifier = Modifier.size(16.dp))
               Spacer(modifier = Modifier.width(6.dp))
@@ -1269,7 +1315,6 @@ fun CrmModuleDispatcher(
 @Composable
 private fun EmptyModuleCard(
   message: String,
-  onLoadDemo: () -> Unit = {},
 ) {
   Card(
     shape = RoundedCornerShape(16.dp),

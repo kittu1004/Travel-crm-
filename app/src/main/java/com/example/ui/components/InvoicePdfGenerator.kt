@@ -210,7 +210,8 @@ suspend fun generateBookingInvoicePdf(
     }
 
     canvas.drawText("DRIVER & FLEET DETAILS", 320f, 160f, labelPaint)
-    canvas.drawText("Fleet Category: ${booking.vehicleCategory}", 320f, 180f, boldBodyPaint)
+    val modelSuffix = if (booking.vehicleModel.isNotBlank()) " • ${booking.vehicleModel}" else ""
+    canvas.drawText("Fleet: ${booking.vehicleCategory}$modelSuffix", 320f, 180f, boldBodyPaint)
     canvas.drawText("Vehicle Plate: ${booking.vehicleNumber}", 320f, 198f, bodyPaint)
     canvas.drawText("Driver Name: ${booking.driverName}", 320f, 216f, bodyPaint)
     canvas.drawText(
@@ -244,7 +245,7 @@ suspend fun generateBookingInvoicePdf(
 
     // Row 1: Base Fare
     canvas.drawText(
-      "Base Fleet Charter Tariff (${booking.vehicleCategory} - ${booking.distanceKm} km)",
+      "Base Fleet Charter Tariff (${booking.vehicleCategory}$modelSuffix - ${booking.distanceKm} km)",
       50f,
       currentY,
       boldBodyPaint
@@ -338,6 +339,143 @@ suspend fun generateBookingInvoicePdf(
   }
 }
 
+suspend fun generateGstTaxDetailsPdf(
+  context: Context,
+  bookings: List<Booking>,
+  agencyName: String,
+  agencyGstin: String,
+  defaultGstPercent: Int,
+): Result<File> = withContext(Dispatchers.IO) {
+  runCatching {
+    val activeBookings = bookings.filter { it.tripStatus != "Cancelled" }
+    val taxableValue = activeBookings.sumOf { it.baseAmount }
+    val totalGst = activeBookings.sumOf { it.gstAmount }
+    val cgst = totalGst / 2L
+    val sgst = totalGst - cgst
+
+    val invoicesDir = File(context.cacheDir, "invoices").apply { mkdirs() }
+    val pdfFile = File(invoicesDir, "GST_Tax_Details_Statement.pdf")
+
+    val pdfDocument = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+    val page = pdfDocument.startPage(pageInfo)
+    val canvas = page.canvas
+
+    val navyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#0B1120")
+      style = Paint.Style.FILL
+    }
+    val cardBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#F8FAFC")
+      style = Paint.Style.FILL
+    }
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#CBD5E1")
+      style = Paint.Style.STROKE
+      strokeWidth = 1f
+    }
+    val tealAccentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#CCFBF1")
+      style = Paint.Style.FILL
+    }
+    val titleWhitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.WHITE
+      textSize = 20f
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val subWhitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#94A3B8")
+      textSize = 11f
+    }
+    val headingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#0F172A")
+      textSize = 13f
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#1E293B")
+      textSize = 11.5f
+    }
+    val boldBodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      color = AndroidColor.parseColor("#0F172A")
+      textSize = 12f
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val rightBoldPaint = Paint(boldBodyPaint).apply {
+      textAlign = Paint.Align.RIGHT
+    }
+
+    // Header
+    canvas.drawRect(0f, 0f, 595f, 110f, navyPaint)
+    canvas.drawText("GST Tax Details Statement", 36f, 44f, titleWhitePaint)
+    canvas.drawText("$agencyName  •  GSTIN: $agencyGstin", 36f, 68f, subWhitePaint)
+    canvas.drawText("SAC Code: 996411 (Passenger Transport Services)", 36f, 88f, subWhitePaint)
+
+    // Summary Box
+    val summaryRect = RectF(36f, 134f, 559f, 360f)
+    canvas.drawRoundRect(summaryRect, 10f, 10f, cardBgPaint)
+    canvas.drawRoundRect(summaryRect, 10f, 10f, borderPaint)
+
+    var y = 166f
+    canvas.drawText("GST TAX SUMMARY", 52f, y, headingPaint)
+    y += 28f
+    canvas.drawText("Total Taxable Passenger Fare Value", 52f, y, bodyPaint)
+    canvas.drawText(formatInr(taxableValue), 543f, y, rightBoldPaint)
+    canvas.drawLine(52f, y + 10f, 543f, y + 10f, borderPaint)
+
+    y += 32f
+    canvas.drawText("Output CGST (${defaultGstPercent / 2.0}%)", 52f, y, bodyPaint)
+    canvas.drawText(formatInr(cgst), 543f, y, rightBoldPaint)
+    canvas.drawLine(52f, y + 10f, 543f, y + 10f, borderPaint)
+
+    y += 32f
+    canvas.drawText("Output SGST (${defaultGstPercent / 2.0}%)", 52f, y, bodyPaint)
+    canvas.drawText(formatInr(sgst), 543f, y, rightBoldPaint)
+    canvas.drawLine(52f, y + 10f, 543f, y + 10f, borderPaint)
+
+    y += 32f
+    canvas.drawText("Gross Output GST Collected", 52f, y, boldBodyPaint)
+    canvas.drawText(formatInr(totalGst), 543f, y, rightBoldPaint)
+
+    // Collected Net GST Highlight Box
+    y += 24f
+    val netBox = RectF(48f, y, 547f, y + 42f)
+    canvas.drawRoundRect(netBox, 8f, 8f, tealAccentPaint)
+    canvas.drawRoundRect(netBox, 8f, 8f, borderPaint)
+    canvas.drawText("Collected Net GST", 64f, y + 26f, headingPaint)
+    canvas.drawText(formatInr(totalGst), 535f, y + 26f, rightBoldPaint)
+
+    // Recent GST Invoices Table
+    var tableY = 390f
+    canvas.drawText("RECENT GST BOOKINGS & INVOICES", 36f, tableY, headingPaint)
+    tableY += 16f
+    val thRect = RectF(36f, tableY, 559f, tableY + 28f)
+    canvas.drawRoundRect(thRect, 6f, 6f, navyPaint)
+    val thWhite = Paint(titleWhitePaint).apply { textSize = 10.5f }
+    canvas.drawText("CUSTOMER", 48f, tableY + 18f, thWhite)
+    canvas.drawText("DATE", 230f, tableY + 18f, thWhite)
+    canvas.drawText("BASE FARE", 340f, tableY + 18f, thWhite)
+    canvas.drawText("GST COLLECTED", 455f, tableY + 18f, thWhite)
+
+    var rowY = tableY + 48f
+    activeBookings.take(10).forEach { b ->
+      canvas.drawText(b.customerName.take(22), 48f, rowY, bodyPaint)
+      canvas.drawText(com.example.data.formatToDdMmYyyy(b.tripDate), 230f, rowY, bodyPaint)
+      canvas.drawText(formatInr(b.baseAmount), 340f, rowY, bodyPaint)
+      canvas.drawText(formatInr(b.gstAmount), 455f, rowY, boldBodyPaint)
+      canvas.drawLine(36f, rowY + 8f, 559f, rowY + 8f, borderPaint)
+      rowY += 26f
+    }
+
+    pdfDocument.finishPage(page)
+    FileOutputStream(pdfFile).use { out ->
+      pdfDocument.writeTo(out)
+    }
+    pdfDocument.close()
+    pdfFile
+  }
+}
+
 suspend fun copyInvoicePdfToUri(sourceFile: File, destUri: Uri, context: Context): Result<Long> =
   withContext(Dispatchers.IO) {
     runCatching {
@@ -363,17 +501,151 @@ fun shareOrOpenInvoicePdf(context: Context, pdfFile: File, invoiceNo: String, op
       addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     runCatching {
-      context.startActivity(Intent.createChooser(viewIntent, "Open Invoice $invoiceNo"))
+      context.startActivity(Intent.createChooser(viewIntent, "Open $invoiceNo"))
     }
   } else {
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
       type = "application/pdf"
       putExtra(Intent.EXTRA_STREAM, uri)
-      putExtra(Intent.EXTRA_SUBJECT, "Invoice $invoiceNo - ${pdfFile.name}")
+      putExtra(Intent.EXTRA_SUBJECT, "$invoiceNo - ${pdfFile.name}")
       addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     runCatching {
-      context.startActivity(Intent.createChooser(shareIntent, "Share Invoice PDF ($invoiceNo)"))
+      context.startActivity(Intent.createChooser(shareIntent, "Share PDF ($invoiceNo)"))
+    }
+  }
+}
+
+@Composable
+fun GstTaxPdfDownloadDialog(
+  bookings: List<Booking>,
+  agencyName: String,
+  agencyGstin: String,
+  defaultGstPercent: Int,
+  onDismiss: () -> Unit,
+  onStatusMessage: (String) -> Unit,
+) {
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+  var generatedFile by remember { mutableStateOf<File?>(null) }
+  var errorText by remember { mutableStateOf<String?>(null) }
+
+  val activeBookings = remember(bookings) { bookings.filter { it.tripStatus != "Cancelled" } }
+  val taxableValue = remember(activeBookings) { activeBookings.sumOf { it.baseAmount } }
+  val totalGst = remember(activeBookings) { activeBookings.sumOf { it.gstAmount } }
+  val cgst = totalGst / 2L
+  val sgst = totalGst - cgst
+
+  LaunchedEffect(bookings, agencyName, agencyGstin, defaultGstPercent) {
+    val result = generateGstTaxDetailsPdf(
+      context = context,
+      bookings = bookings,
+      agencyName = agencyName,
+      agencyGstin = agencyGstin,
+      defaultGstPercent = defaultGstPercent
+    )
+    result.fold(
+      onSuccess = { file -> generatedFile = file },
+      onFailure = { err -> errorText = err.localizedMessage ?: "Failed to generate GST PDF" }
+    )
+  }
+
+  val saveGstPdfLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument("application/pdf")
+  ) { destUri: Uri? ->
+    val file = generatedFile
+    if (destUri != null && file != null) {
+      scope.launch {
+        copyInvoicePdfToUri(file, destUri, context).fold(
+          onSuccess = {
+            onStatusMessage("Saved GST Tax Details PDF to your device!")
+            onDismiss()
+          },
+          onFailure = { e ->
+            onStatusMessage("Failed to save GST PDF: ${e.localizedMessage}")
+          }
+        )
+      }
+    }
+  }
+
+  CrmFormModalShell(
+    badgeText = "GST TAX DETAILS PDF",
+    badgeBg = KpiGreenBg,
+    badgeFg = NewBookingGreen,
+    title = "Download GST Tax Details",
+    subtitle = "Export SAC 9964 Passenger Transport GST summary and Collected Net GST as PDF.",
+    primaryButtonText = "Save GST PDF",
+    primaryButtonColor = NewBookingGreen,
+    onDismiss = onDismiss,
+    onConfirm = {
+      saveGstPdfLauncher.launch("GST_Tax_Details_${agencyName.replace(" ", "_")}.pdf")
+    }
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(14.dp))
+        .background(CardSurface)
+        .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+        .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+      Text("GSTIN: $agencyGstin ($agencyName)", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = SidebarActiveBlue)
+      HorizontalDivider(color = CardBorder)
+      InvoiceLineRow("Total Taxable Passenger Fare Value", formatInr(taxableValue))
+      InvoiceLineRow("Output CGST (${defaultGstPercent / 2.0}%)", formatInr(cgst))
+      InvoiceLineRow("Output SGST (${defaultGstPercent / 2.0}%)", formatInr(sgst))
+      InvoiceLineRow("Gross Output GST Collected", formatInr(totalGst))
+      HorizontalDivider(color = CardBorder)
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text("Collected Net GST", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = TextPrimaryDark)
+        Text(formatInr(totalGst), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = KpiGreenIcon)
+      }
+    }
+
+    if (errorText != null) {
+      Text(errorText ?: "", color = Color.Red, fontSize = 12.sp)
+    }
+
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Button(
+        onClick = {
+          saveGstPdfLauncher.launch("GST_Tax_Details_${agencyName.replace(" ", "_")}.pdf")
+        },
+        enabled = generatedFile != null,
+        colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("save_gst_pdf_button")
+      ) {
+        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Download / Save GST Details PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      }
+
+      OutlinedButton(
+        onClick = {
+          generatedFile?.let { file ->
+            shareOrOpenInvoicePdf(context, file, "GST_Tax_Details", openDirectly = false)
+          }
+        },
+        enabled = generatedFile != null,
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Share GST Details PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      }
     }
   }
 }
@@ -518,8 +790,9 @@ fun InvoicePdfGeneratedDialog(
             color = TextPrimaryDark
           )
           val driverPhoneText = if (booking.driverPhone.isNotBlank()) " (${booking.driverPhone})" else ""
+          val modelText = if (booking.vehicleModel.isNotBlank()) " • ${booking.vehicleModel}" else ""
           Text(
-            text = "Fleet: ${booking.vehicleCategory} (${booking.vehicleNumber}) • Driver: ${booking.driverName}$driverPhoneText • ${booking.distanceKm} km",
+            text = "Fleet: ${booking.vehicleCategory}$modelText (${booking.vehicleNumber}) • Driver: ${booking.driverName}$driverPhoneText • ${booking.distanceKm} km",
             fontSize = 11.sp,
             color = TextSecondarySlate
           )
@@ -563,10 +836,10 @@ fun InvoicePdfGeneratedDialog(
       Text(errorText ?: "", color = Color.Red, fontSize = 12.sp)
     }
 
-    // Quick Action Row: Edit Invoice (Toll/Parking/GST), Save PDF, Share PDF, View PDF
-    Row(
+    // Quick Action Column (up and down)
+    Column(
       modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
+      verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       OutlinedButton(
         onClick = {
@@ -575,11 +848,11 @@ fun InvoicePdfGeneratedDialog(
         },
         shape = RoundedCornerShape(10.dp),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
-        modifier = Modifier.weight(1.1f)
+        modifier = Modifier.fillMaxWidth()
       ) {
         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(15.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("Edit Toll/GST", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Edit Invoice / Toll / GST", fontSize = 12.sp, fontWeight = FontWeight.Bold)
       }
 
       Button(
@@ -591,12 +864,12 @@ fun InvoicePdfGeneratedDialog(
         shape = RoundedCornerShape(10.dp),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
         modifier = Modifier
-          .weight(1f)
+          .fillMaxWidth()
           .testTag("save_invoice_pdf_button")
       ) {
         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("Save PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Save Invoice PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
       }
 
       OutlinedButton(
@@ -609,12 +882,12 @@ fun InvoicePdfGeneratedDialog(
         shape = RoundedCornerShape(10.dp),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
         modifier = Modifier
-          .weight(1f)
+          .fillMaxWidth()
           .testTag("share_invoice_pdf_button")
       ) {
         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("Share", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Share Invoice PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
       }
 
       OutlinedButton(
@@ -627,12 +900,12 @@ fun InvoicePdfGeneratedDialog(
         shape = RoundedCornerShape(10.dp),
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
         modifier = Modifier
-          .weight(1f)
+          .fillMaxWidth()
           .testTag("open_invoice_pdf_button")
       ) {
         Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("View", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("View Invoice PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
       }
     }
   }

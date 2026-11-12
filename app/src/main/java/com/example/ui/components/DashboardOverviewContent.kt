@@ -137,6 +137,9 @@ fun DashboardOverviewContent(
     .filter { it.paymentStatus == "Pending" }
     .sumOf { it.totalAmount }
 
+  val totalGst = validBookings
+    .sumOf { it.gstAmount }
+
   val kpiCards = listOf(
     KpiCardSpec(
       id = "total_bookings",
@@ -218,6 +221,15 @@ fun DashboardOverviewContent(
       iconTint = KpiAmberIcon,
       iconBg = KpiAmberBg,
       targetSection = CrmSection.INVOICES_BILLING
+    ),
+    KpiCardSpec(
+      id = "gst_details",
+      title = "GST\nDETAILS",
+      valueText = formatInr(totalGst),
+      icon = Icons.Default.Percent,
+      iconTint = KpiTealIcon,
+      iconBg = KpiTealBg,
+      targetSection = CrmSection.GST_TAX
     ),
   )
 

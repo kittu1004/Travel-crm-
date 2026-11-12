@@ -195,8 +195,8 @@ fun CommandCenterHeader(
   selectedSection: CrmSection = CrmSection.DASHBOARD,
   onOpenDrawer: () -> Unit,
   onLoadDemoData: () -> Unit = {},
-  onNewBooking: () -> Unit,
-  onViewWebsite: () -> Unit,
+  onNewBooking: () -> Unit = {},
+  onViewWebsite: () -> Unit = {},
   onDownloadApk: () -> Unit = {},
 ) {
   Column(
@@ -246,96 +246,6 @@ fun CommandCenterHeader(
             color = TextSecondarySlate
           )
         }
-      }
-    }
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Top action buttons row (Load Live Demo Data removed; New Booking hidden on Invoices History, GST Tax Details & Vehicles Maintenance)
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .horizontalScroll(rememberScrollState()),
-      horizontalArrangement = Arrangement.spacedBy(10.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      if (
-        selectedSection != CrmSection.INVOICES_BILLING &&
-        selectedSection != CrmSection.GST_TAX &&
-        selectedSection != CrmSection.VEHICLES_MAINTENANCE
-      ) {
-        Button(
-          onClick = onNewBooking,
-          shape = RoundedCornerShape(10.dp),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = NewBookingGreen,
-            contentColor = Color.White
-          ),
-          contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-          modifier = Modifier.testTag("new_booking_button")
-        ) {
-          Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp)
-          )
-          Spacer(modifier = Modifier.width(6.dp))
-          Text(
-            text = "New Booking",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
-          )
-        }
-      }
-
-      OutlinedButton(
-        onClick = onViewWebsite,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, CardBorder),
-        colors = ButtonDefaults.outlinedButtonColors(
-          containerColor = Color.White,
-          contentColor = TextPrimaryDark
-        ),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-        modifier = Modifier.testTag("view_website_button")
-      ) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-          contentDescription = null,
-          modifier = Modifier.size(15.dp),
-          tint = TextSecondarySlate
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-          text = "View Website",
-          fontSize = 13.sp,
-          fontWeight = FontWeight.SemiBold
-        )
-      }
-
-      OutlinedButton(
-        onClick = onDownloadApk,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.4f)),
-        colors = ButtonDefaults.outlinedButtonColors(
-          containerColor = Color.White,
-          contentColor = SidebarActiveBlue
-        ),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-        modifier = Modifier.testTag("header_download_apk_button")
-      ) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-          contentDescription = null,
-          modifier = Modifier.size(15.dp),
-          tint = SidebarActiveBlue
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-          text = "Download APK",
-          fontSize = 13.sp,
-          fontWeight = FontWeight.Bold
-        )
       }
     }
   }

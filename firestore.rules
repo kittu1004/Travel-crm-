@@ -28,7 +28,7 @@ service cloud.firestore {
     }
 
     function isValidVehicleCategory(cat) {
-      return cat is string && cat in ['Sedans', 'Compact SUVs', 'SUVs', 'Tourist Travellers'];
+      return cat is string && cat in ['Sedan', 'Sedans', 'Compact SUV', 'Compact SUVs', 'SUV', 'SUVs', 'Tourist Traveller', 'Tourist Travellers'];
     }
 
     function isValidTimestampsOnCreate(data) {
@@ -51,23 +51,24 @@ service cloud.firestore {
              ]) &&
              data.keys().hasOnly([
                'userId', 'customerName', 'companyName', 'customerPhone', 'pickupLocation', 'dropLocation',
-               'vehicleCategory', 'vehicleNumber', 'driverName', 'driverPhone', 'tripStatus', 'paymentStatus',
+               'vehicleCategory', 'vehicleModel', 'vehicleNumber', 'driverName', 'driverPhone', 'tripStatus', 'paymentStatus',
                'paymentChannel', 'baseAmount', 'tollCharges', 'parkingCharges', 'gstAmount',
                'totalAmount', 'expenseAmount', 'distanceKm', 'tripDate', 'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
-             data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100 &&
+             data.customerName is string && data.customerName.size() <= 100 &&
              (!('companyName' in data) || (data.companyName is string && data.companyName.size() <= 100)) &&
-             data.customerPhone is string && data.customerPhone.size() >= 1 && data.customerPhone.size() <= 30 &&
-             data.pickupLocation is string && data.pickupLocation.size() >= 1 && data.pickupLocation.size() <= 150 &&
-             data.dropLocation is string && data.dropLocation.size() >= 1 && data.dropLocation.size() <= 150 &&
+             data.customerPhone is string && data.customerPhone.size() <= 30 &&
+             data.pickupLocation is string && data.pickupLocation.size() <= 150 &&
+             data.dropLocation is string && data.dropLocation.size() <= 150 &&
              isValidVehicleCategory(data.vehicleCategory) &&
-             data.vehicleNumber is string && data.vehicleNumber.size() >= 1 && data.vehicleNumber.size() <= 30 &&
-             data.driverName is string && data.driverName.size() >= 1 && data.driverName.size() <= 100 &&
+             (!('vehicleModel' in data) || (data.vehicleModel is string && data.vehicleModel.size() <= 100)) &&
+             data.vehicleNumber is string && data.vehicleNumber.size() <= 30 &&
+             data.driverName is string && data.driverName.size() <= 100 &&
              (!('driverPhone' in data) || (data.driverPhone is string && data.driverPhone.size() <= 30)) &&
              data.tripStatus is string && data.tripStatus in ['Active', 'Completed', 'Cancelled'] &&
              data.paymentStatus is string && data.paymentStatus in ['Paid', 'Pending'] &&
-             data.paymentChannel is string && data.paymentChannel.size() >= 1 && data.paymentChannel.size() <= 50 &&
+             data.paymentChannel is string && data.paymentChannel.size() <= 50 &&
              data.baseAmount is int && data.baseAmount >= 0 && data.baseAmount <= 100000000 &&
              (!('tollCharges' in data) || (data.tollCharges is int && data.tollCharges >= 0 && data.tollCharges <= 100000000)) &&
              (!('parkingCharges' in data) || (data.parkingCharges is int && data.parkingCharges >= 0 && data.parkingCharges <= 100000000)) &&
@@ -75,7 +76,7 @@ service cloud.firestore {
              data.totalAmount is int && data.totalAmount >= 0 && data.totalAmount <= 200000000 &&
              data.expenseAmount is int && data.expenseAmount >= 0 && data.expenseAmount <= 100000000 &&
              data.distanceKm is int && data.distanceKm >= 0 && data.distanceKm <= 1000000 &&
-             data.tripDate is string && data.tripDate.size() >= 1 && data.tripDate.size() <= 40;
+             data.tripDate is string && data.tripDate.size() <= 40;
     }
 
     // 2. Driver Validation Blueprint
@@ -86,15 +87,20 @@ service cloud.firestore {
                'createdAt', 'updatedAt'
              ]) &&
              data.keys().hasOnly([
-               'userId', 'name', 'phone', 'licenseNumber', 'assignedVehicle',
+               'userId', 'name', 'phone', 'address', 'licenseNumber', 'aadharNumber',
+               'selfiePhotoUri', 'documentsUploaded', 'assignedVehicle',
                'vehicleCategory', 'status', 'tripsCompleted', 'earningsTotal',
                'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
-             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
-             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30 &&
-             data.licenseNumber is string && data.licenseNumber.size() >= 1 && data.licenseNumber.size() <= 40 &&
-             data.assignedVehicle is string && data.assignedVehicle.size() >= 1 && data.assignedVehicle.size() <= 50 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 250)) &&
+             data.licenseNumber is string && data.licenseNumber.size() <= 40 &&
+             (!('aadharNumber' in data) || (data.aadharNumber is string && data.aadharNumber.size() <= 40)) &&
+             (!('selfiePhotoUri' in data) || (data.selfiePhotoUri is string && data.selfiePhotoUri.size() <= 500)) &&
+             (!('documentsUploaded' in data) || (data.documentsUploaded is string && data.documentsUploaded.size() <= 500)) &&
+             data.assignedVehicle is string && data.assignedVehicle.size() <= 50 &&
              isValidVehicleCategory(data.vehicleCategory) &&
              data.status is string && data.status in ['Available', 'On Trip', 'Off Duty'] &&
              data.tripsCompleted is int && data.tripsCompleted >= 0 && data.tripsCompleted <= 1000000 &&
@@ -112,25 +118,32 @@ service cloud.firestore {
                'userId', 'registrationNumber', 'modelName', 'manufacturingYear', 'category',
                'status', 'maintenanceCost', 'serviceDate', 'nextServiceDate',
                'serviceKilometers', 'presentRunningKilometers', 'nextServiceKilometers',
-               'insuranceDetails', 'fitnessDetails', 'pollutionDetails', 'serviceNotes',
-               'createdAt', 'updatedAt'
+               'partsChanged',
+               'insuranceDetails', 'insuranceExpiryDate',
+               'fitnessDetails', 'fitnessExpiryDate',
+               'pollutionDetails', 'pollutionExpiryDate',
+               'serviceNotes', 'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
-             data.registrationNumber is string && data.registrationNumber.size() >= 1 && data.registrationNumber.size() <= 30 &&
-             data.modelName is string && data.modelName.size() >= 1 && data.modelName.size() <= 100 &&
+             data.registrationNumber is string && data.registrationNumber.size() <= 30 &&
+             data.modelName is string && data.modelName.size() <= 100 &&
              (!('manufacturingYear' in data) || (data.manufacturingYear is string && data.manufacturingYear.size() <= 20)) &&
              isValidVehicleCategory(data.category) &&
              data.status is string && data.status in ['Available', 'On Trip', 'Maintenance'] &&
              data.maintenanceCost is int && data.maintenanceCost >= 0 && data.maintenanceCost <= 100000000 &&
              (!('serviceDate' in data) || (data.serviceDate is string && data.serviceDate.size() <= 40)) &&
-             data.nextServiceDate is string && data.nextServiceDate.size() >= 1 && data.nextServiceDate.size() <= 40 &&
+             data.nextServiceDate is string && data.nextServiceDate.size() <= 40 &&
              (!('serviceKilometers' in data) || (data.serviceKilometers is int && data.serviceKilometers >= 0 && data.serviceKilometers <= 10000000)) &&
              (!('presentRunningKilometers' in data) || (data.presentRunningKilometers is int && data.presentRunningKilometers >= 0 && data.presentRunningKilometers <= 10000000)) &&
              (!('nextServiceKilometers' in data) || (data.nextServiceKilometers is int && data.nextServiceKilometers >= 0 && data.nextServiceKilometers <= 10000000)) &&
+             (!('partsChanged' in data) || (data.partsChanged is string && data.partsChanged.size() <= 500)) &&
              (!('insuranceDetails' in data) || (data.insuranceDetails is string && data.insuranceDetails.size() <= 200)) &&
+             (!('insuranceExpiryDate' in data) || (data.insuranceExpiryDate is string && data.insuranceExpiryDate.size() <= 40)) &&
              (!('fitnessDetails' in data) || (data.fitnessDetails is string && data.fitnessDetails.size() <= 200)) &&
+             (!('fitnessExpiryDate' in data) || (data.fitnessExpiryDate is string && data.fitnessExpiryDate.size() <= 40)) &&
              (!('pollutionDetails' in data) || (data.pollutionDetails is string && data.pollutionDetails.size() <= 200)) &&
-             data.serviceNotes is string && data.serviceNotes.size() >= 1 && data.serviceNotes.size() <= 300;
+             (!('pollutionExpiryDate' in data) || (data.pollutionExpiryDate is string && data.pollutionExpiryDate.size() <= 40)) &&
+             data.serviceNotes is string && data.serviceNotes.size() <= 300;
     }
 
     // 4. Lead Validation Blueprint
@@ -146,13 +159,13 @@ service cloud.firestore {
                'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
-             data.clientName is string && data.clientName.size() >= 1 && data.clientName.size() <= 100 &&
-             data.clientPhone is string && data.clientPhone.size() >= 1 && data.clientPhone.size() <= 30 &&
-             data.routeSummary is string && data.routeSummary.size() >= 1 && data.routeSummary.size() <= 150 &&
+             data.clientName is string && data.clientName.size() <= 100 &&
+             data.clientPhone is string && data.clientPhone.size() <= 30 &&
+             data.routeSummary is string && data.routeSummary.size() <= 150 &&
              isValidVehicleCategory(data.preferredCategory) &&
              data.quotedAmount is int && data.quotedAmount >= 0 && data.quotedAmount <= 100000000 &&
              data.status is string && data.status in ['New', 'Quoted', 'Converted', 'Lost'] &&
-             data.source is string && data.source.size() >= 1 && data.source.size() <= 50;
+             data.source is string && data.source.size() <= 50;
     }
 
     // 5. Customer Validation Blueprint
@@ -168,12 +181,12 @@ service cloud.firestore {
                'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
-             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.name is string && data.name.size() <= 100 &&
              (!('address' in data) || (data.address is string && data.address.size() <= 250)) &&
-             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30 &&
-             data.email is string && data.email.size() >= 1 && data.email.size() <= 100 &&
-             data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 100 &&
-             data.gstin is string && data.gstin.size() >= 1 && data.gstin.size() <= 30 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.companyName is string && data.companyName.size() <= 100 &&
+             data.gstin is string && data.gstin.size() <= 30 &&
              data.totalBookings is int && data.totalBookings >= 0 && data.totalBookings <= 1000000 &&
              data.totalBilled is int && data.totalBilled >= 0 && data.totalBilled <= 200000000 &&
              data.pendingBalance is int && data.pendingBalance >= 0 && data.pendingBalance <= 200000000;
@@ -192,7 +205,7 @@ service cloud.firestore {
                          isValidTimestampsOnUpdate(incoming(), existing()) &&
                          incoming().diff(existing()).affectedKeys().hasOnly([
                            'customerName', 'companyName', 'customerPhone', 'pickupLocation', 'dropLocation',
-                           'vehicleCategory', 'vehicleNumber', 'driverName', 'driverPhone', 'tripStatus',
+                           'vehicleCategory', 'vehicleModel', 'vehicleNumber', 'driverName', 'driverPhone', 'tripStatus',
                            'paymentStatus', 'paymentChannel', 'baseAmount', 'tollCharges',
                            'parkingCharges', 'gstAmount', 'totalAmount', 'expenseAmount',
                            'distanceKm', 'tripDate', 'updatedAt'
@@ -211,7 +224,8 @@ service cloud.firestore {
                          incoming().userId == existing().userId &&
                          isValidTimestampsOnUpdate(incoming(), existing()) &&
                          incoming().diff(existing()).affectedKeys().hasOnly([
-                           'name', 'phone', 'licenseNumber', 'assignedVehicle',
+                           'name', 'phone', 'address', 'licenseNumber', 'aadharNumber',
+                           'selfiePhotoUri', 'documentsUploaded', 'assignedVehicle',
                            'vehicleCategory', 'status', 'tripsCompleted', 'earningsTotal', 'updatedAt'
                          ]);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(driverId);
@@ -231,7 +245,11 @@ service cloud.firestore {
                            'registrationNumber', 'modelName', 'manufacturingYear', 'category', 'status',
                            'maintenanceCost', 'serviceDate', 'nextServiceDate',
                            'serviceKilometers', 'presentRunningKilometers', 'nextServiceKilometers',
-                           'insuranceDetails', 'fitnessDetails', 'pollutionDetails', 'serviceNotes', 'updatedAt'
+                           'partsChanged',
+                           'insuranceDetails', 'insuranceExpiryDate',
+                           'fitnessDetails', 'fitnessExpiryDate',
+                           'pollutionDetails', 'pollutionExpiryDate',
+                           'serviceNotes', 'updatedAt'
                          ]);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(vehicleId);
       }

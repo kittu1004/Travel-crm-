@@ -146,13 +146,6 @@ class CrmViewModel(
         initialValue = UiState.Loading
       )
 
-  init {
-    viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-      kotlinx.coroutines.delay(350L)
-      repository.ensureDefaultDriversSeeded()
-    }
-  }
-
   fun selectSection(section: CrmSection) {
     _selectedSection.value = section
   }
@@ -183,20 +176,7 @@ class CrmViewModel(
   }
 
   fun loadLiveDemoData() {
-    if (_isActionBusy.value) return
-    viewModelScope.launch {
-      _isActionBusy.value = true
-      val result = repository.loadLiveDemoData(todayDateString())
-      _isActionBusy.value = false
-      result.fold(
-        onSuccess = {
-          _statusBanner.value = "Live Demo Data loaded! Fleet, bookings, GST invoices & leads synced."
-        },
-        onFailure = { e ->
-          _statusBanner.value = "Failed to load demo data: ${e.localizedMessage ?: "Error"}"
-        }
-      )
-    }
+    // Default/demo data seeding disabled per user requirement: keep only saved data.
   }
 
   fun refreshRevenueMetrics() {
@@ -211,6 +191,7 @@ class CrmViewModel(
     pickupLocation: String,
     dropLocation: String,
     vehicleCategory: String,
+    vehicleModel: String = "",
     vehicleNumber: String,
     driverName: String,
     driverPhone: String = "",
@@ -230,22 +211,23 @@ class CrmViewModel(
     val safeParking = parkingCharges.coerceAtLeast(0L)
     val safeGst = gstAmount.coerceAtLeast(0L)
     val totalAmount = safeBase + safeToll + safeParking + safeGst
-    val resolvedCustomer = customerName.trim().ifBlank { "Walk-in Corporate Client" }
+    val resolvedCustomer = customerName.trim()
 
     viewModelScope.launch {
       _isActionBusy.value = true
       val bookingPayload = (existingBooking ?: Booking()).copy(
         customerName = resolvedCustomer,
         companyName = companyName.trim(),
-        customerPhone = customerPhone.trim().ifBlank { "+91 98450 00000" },
-        pickupLocation = pickupLocation.trim().ifBlank { "Bengaluru Airport T2" },
-        dropLocation = dropLocation.trim().ifBlank { "MG Road Business Hub" },
-        vehicleCategory = vehicleCategory,
-        vehicleNumber = vehicleNumber.trim().ifBlank { "KA-01-MG-4590" },
-        driverName = driverName.trim().ifBlank { "Ramesh Kumar" },
-        driverPhone = driverPhone.trim().ifBlank { "+91 98450 11223" },
-        tripStatus = tripStatus,
-        paymentStatus = paymentStatus,
+        customerPhone = customerPhone.trim(),
+        pickupLocation = pickupLocation.trim(),
+        dropLocation = dropLocation.trim(),
+        vehicleCategory = vehicleCategory.ifBlank { "Sedan" },
+        vehicleModel = vehicleModel.trim(),
+        vehicleNumber = vehicleNumber.trim(),
+        driverName = driverName.trim(),
+        driverPhone = driverPhone.trim(),
+        tripStatus = tripStatus.ifBlank { "Active" },
+        paymentStatus = paymentStatus.ifBlank { "Paid" },
         paymentChannel = paymentChannel.trim().ifBlank { "UPI" },
         baseAmount = safeBase,
         tollCharges = safeToll,
@@ -253,7 +235,7 @@ class CrmViewModel(
         gstAmount = safeGst,
         totalAmount = totalAmount.coerceAtLeast(0L),
         expenseAmount = expenseAmount.coerceAtLeast(0L),
-        distanceKm = distanceKm.coerceAtLeast(1L),
+        distanceKm = distanceKm.coerceAtLeast(0L),
         tripDate = tripDate.trim().ifBlank { todayDateString() },
       )
 
@@ -266,47 +248,53 @@ class CrmViewModel(
       result.fold(
         onSuccess = {
           // Automatically sync customer details (name, address, mobile number, total trips) to Customer Data
-          val currentCustomers = (customersState.value as? UiState.Success<List<Customer>>)?.data ?: emptyList()
-          val currentBookings = (bookingsState.value as? UiState.Success<List<Booking>>)?.data ?: emptyList()
-          val resolvedPhone = bookingPayload.customerPhone
-          val resolvedAddress = "${bookingPayload.pickupLocation} → ${bookingPayload.dropLocation}"
-          val existingCust = currentCustomers.firstOrNull {
-            it.name.equals(resolvedCustomer, ignoreCase = true) ||
-              (resolvedPhone.isNotBlank() && it.phone == resolvedPhone)
-          }
-          val matchingTripCount = (currentBookings.count {
-            it.customerName.equals(resolvedCustomer, ignoreCase = true) ||
-              (resolvedPhone.isNotBlank() && it.customerPhone == resolvedPhone)
-          } + if (existingBooking == null) 1 else 0).toLong().coerceAtLeast(1L)
+          if (resolvedCustomer.isNotBlank()) {
+            val currentCustomers = (customersState.value as? UiState.Success<List<Customer>>)?.data ?: emptyList()
+            val currentBookings = (bookingsState.value as? UiState.Success<List<Booking>>)?.data ?: emptyList()
+            val resolvedPhone = bookingPayload.customerPhone
+            val resolvedAddress = if (bookingPayload.pickupLocation.isNotBlank() || bookingPayload.dropLocation.isNotBlank()) {
+              "${bookingPayload.pickupLocation} → ${bookingPayload.dropLocation}"
+            } else {
+              bookingPayload.companyName
+            }
+            val existingCust = currentCustomers.firstOrNull {
+              it.name.equals(resolvedCustomer, ignoreCase = true) ||
+                (resolvedPhone.isNotBlank() && it.phone == resolvedPhone)
+            }
+            val matchingTripCount = (currentBookings.count {
+              it.customerName.equals(resolvedCustomer, ignoreCase = true) ||
+                (resolvedPhone.isNotBlank() && it.customerPhone == resolvedPhone)
+            } + if (existingBooking == null) 1 else 0).toLong().coerceAtLeast(1L)
 
-          if (existingCust != null && existingCust.id.isNotBlank() && existingCust.createdAt != null) {
-            repository.updateCustomer(
-              existingCust.copy(
-                name = resolvedCustomer,
-                address = existingCust.address.ifBlank { resolvedAddress },
-                phone = resolvedPhone,
-                companyName = bookingPayload.companyName.ifBlank { existingCust.companyName },
-                totalBookings = matchingTripCount.coerceAtLeast(existingCust.totalBookings)
+            if (existingCust != null && existingCust.id.isNotBlank() && existingCust.createdAt != null) {
+              repository.updateCustomer(
+                existingCust.copy(
+                  name = resolvedCustomer,
+                  address = existingCust.address.ifBlank { resolvedAddress },
+                  phone = resolvedPhone.ifBlank { existingCust.phone },
+                  companyName = bookingPayload.companyName.ifBlank { existingCust.companyName },
+                  totalBookings = matchingTripCount.coerceAtLeast(existingCust.totalBookings)
+                )
               )
-            )
-          } else if (existingCust == null) {
-            repository.addCustomer(
-              Customer(
-                name = resolvedCustomer,
-                address = resolvedAddress,
-                phone = resolvedPhone,
-                email = "customer@fleetcrm.in",
-                companyName = bookingPayload.companyName.ifBlank { resolvedCustomer },
-                gstin = "UNREGISTERED",
-                totalBookings = matchingTripCount,
-                totalBilled = totalAmount,
-                pendingBalance = if (bookingPayload.paymentStatus == "Pending") totalAmount else 0L
+            } else if (existingCust == null) {
+              repository.addCustomer(
+                Customer(
+                  name = resolvedCustomer,
+                  address = resolvedAddress,
+                  phone = resolvedPhone,
+                  email = "",
+                  companyName = bookingPayload.companyName,
+                  gstin = "",
+                  totalBookings = matchingTripCount,
+                  totalBilled = totalAmount,
+                  pendingBalance = if (bookingPayload.paymentStatus == "Pending") totalAmount else 0L
+                )
               )
-            )
+            }
           }
 
-          val actionWord = if (existingBooking != null) "Updated" else "Created"
-          _statusBanner.value = "$actionWord booking for $resolvedCustomer (${formatInr(totalAmount)}) — Invoice PDF generated!"
+          val actionWord = if (existingBooking != null) "Updated" else "Saved"
+          _statusBanner.value = "$actionWord booking for ${resolvedCustomer.ifBlank { "Customer" }} (${formatInr(totalAmount)}) — Invoice PDF generated!"
           _latestInvoiceBooking.value = bookingPayload
         },
         onFailure = { e ->
@@ -323,6 +311,7 @@ class CrmViewModel(
     pickupLocation: String,
     dropLocation: String,
     vehicleCategory: String,
+    vehicleModel: String = "",
     vehicleNumber: String,
     driverName: String,
     driverPhone: String = "",
@@ -345,6 +334,7 @@ class CrmViewModel(
       pickupLocation = pickupLocation,
       dropLocation = dropLocation,
       vehicleCategory = vehicleCategory,
+      vehicleModel = vehicleModel,
       vehicleNumber = vehicleNumber,
       driverName = driverName,
       driverPhone = driverPhone,
@@ -381,7 +371,7 @@ class CrmViewModel(
       repository.updateBooking(
         booking.copy(
           expenseAmount = newExpense.coerceAtLeast(0L),
-          distanceKm = newDistanceKm.coerceAtLeast(1L)
+          distanceKm = newDistanceKm.coerceAtLeast(0L)
         )
       ).onSuccess {
         _statusBanner.value = "Updated trip expenses (${formatInr(newExpense)}) & odometer (${newDistanceKm} km) for ${booking.customerName}."
@@ -400,22 +390,30 @@ class CrmViewModel(
     existingDriver: Driver?,
     name: String,
     phone: String,
+    address: String = "",
     licenseNumber: String,
+    aadharNumber: String = "",
+    selfiePhotoUri: String = "",
+    documentsUploaded: String = "",
     assignedVehicle: String,
     vehicleCategory: String,
     status: String,
-    tripsCompleted: Long = existingDriver?.tripsCompleted ?: 1L,
-    earningsTotal: Long = existingDriver?.earningsTotal ?: 2500L,
+    tripsCompleted: Long = existingDriver?.tripsCompleted ?: 0L,
+    earningsTotal: Long = existingDriver?.earningsTotal ?: 0L,
   ) {
-    val resolvedName = name.trim().ifBlank { "New Fleet Driver" }
+    val resolvedName = name.trim()
     viewModelScope.launch {
       val payload = (existingDriver ?: Driver()).copy(
         name = resolvedName,
-        phone = phone.trim().ifBlank { "+91 98450 12345" },
-        licenseNumber = licenseNumber.trim().ifBlank { "KA01-2021-0098123" },
-        assignedVehicle = assignedVehicle.trim().ifBlank { "Toyota Innova (KA-01-AB-1001)" },
-        vehicleCategory = vehicleCategory,
-        status = status,
+        phone = phone.trim(),
+        address = address.trim(),
+        licenseNumber = licenseNumber.trim(),
+        aadharNumber = aadharNumber.trim(),
+        selfiePhotoUri = selfiePhotoUri.trim(),
+        documentsUploaded = documentsUploaded.trim(),
+        assignedVehicle = assignedVehicle.trim(),
+        vehicleCategory = vehicleCategory.ifBlank { "Sedan" },
+        status = status.ifBlank { "Available" },
         tripsCompleted = tripsCompleted.coerceAtLeast(0L),
         earningsTotal = earningsTotal.coerceAtLeast(0L),
       )
@@ -425,7 +423,7 @@ class CrmViewModel(
         repository.addDriver(payload)
       }
       result.onSuccess {
-        val actionWord = if (existingDriver != null) "Updated" else "Added"
+        val actionWord = if (existingDriver != null) "Updated" else "Saved"
         _statusBanner.value = "$actionWord driver $resolvedName in Driver Roster."
       }
     }
@@ -439,7 +437,15 @@ class CrmViewModel(
     vehicleCategory: String,
     status: String,
   ) {
-    saveDriverDetails(null, name, phone, licenseNumber, assignedVehicle, vehicleCategory, status)
+    saveDriverDetails(
+      existingDriver = null,
+      name = name,
+      phone = phone,
+      licenseNumber = licenseNumber,
+      assignedVehicle = assignedVehicle,
+      vehicleCategory = vehicleCategory,
+      status = status
+    )
   }
 
   fun cycleDriverStatus(driver: Driver) {
@@ -473,29 +479,37 @@ class CrmViewModel(
     serviceKilometers: Long = 0L,
     presentRunningKilometers: Long = 0L,
     nextServiceKilometers: Long = 0L,
+    partsChanged: String = "",
     insuranceDetails: String = "",
+    insuranceExpiryDate: String = "",
     fitnessDetails: String = "",
+    fitnessExpiryDate: String = "",
     pollutionDetails: String = "",
+    pollutionExpiryDate: String = "",
     serviceNotes: String = "",
   ) {
-    val resolvedReg = registrationNumber.trim().ifBlank { "KA-01-FL-2026" }
+    val resolvedReg = registrationNumber.trim()
     viewModelScope.launch {
       val payload = (existingVehicle ?: Vehicle()).copy(
         registrationNumber = resolvedReg,
-        modelName = modelName.trim().ifBlank { "Toyota Innova Hycross" },
-        manufacturingYear = manufacturingYear.trim().ifBlank { "2024" },
-        category = category,
+        modelName = modelName.trim(),
+        manufacturingYear = manufacturingYear.trim(),
+        category = category.ifBlank { "Sedan" },
         status = status.ifBlank { "Available" },
         maintenanceCost = maintenanceCost.coerceAtLeast(0L),
-        serviceDate = serviceDate.trim().ifBlank { todayDateString() },
-        nextServiceDate = nextServiceDate.trim().ifBlank { "30-12-2026" },
+        serviceDate = serviceDate.trim(),
+        nextServiceDate = nextServiceDate.trim(),
         serviceKilometers = serviceKilometers.coerceAtLeast(0L),
         presentRunningKilometers = presentRunningKilometers.coerceAtLeast(0L),
         nextServiceKilometers = nextServiceKilometers.coerceAtLeast(0L),
+        partsChanged = partsChanged.trim(),
         insuranceDetails = insuranceDetails.trim(),
+        insuranceExpiryDate = insuranceExpiryDate.trim(),
         fitnessDetails = fitnessDetails.trim(),
+        fitnessExpiryDate = fitnessExpiryDate.trim(),
         pollutionDetails = pollutionDetails.trim(),
-        serviceNotes = serviceNotes.trim().ifBlank { "Routine fleet inspection & oil change" },
+        pollutionExpiryDate = pollutionExpiryDate.trim(),
+        serviceNotes = serviceNotes.trim(),
       )
       val result = if (existingVehicle != null && existingVehicle.id.isNotBlank() && existingVehicle.createdAt != null) {
         repository.updateVehicle(payload)
@@ -503,8 +517,8 @@ class CrmViewModel(
         repository.addVehicle(payload)
       }
       result.onSuccess {
-        val actionWord = if (existingVehicle != null) "Updated" else "Added"
-        _statusBanner.value = "$actionWord vehicle $resolvedReg in fleet registry."
+        val actionWord = if (existingVehicle != null) "Updated" else "Saved"
+        _statusBanner.value = "$actionWord vehicle ${resolvedReg.ifBlank { modelName }} in fleet registry."
       }
     }
   }
@@ -558,15 +572,15 @@ class CrmViewModel(
     source: String,
     status: String = existingLead?.status ?: "New",
   ) {
-    val resolvedClient = clientName.trim().ifBlank { "Prospective Traveler" }
+    val resolvedClient = clientName.trim()
     viewModelScope.launch {
       val payload = (existingLead ?: Lead()).copy(
         clientName = resolvedClient,
-        clientPhone = clientPhone.trim().ifBlank { "+91 99000 11223" },
-        routeSummary = routeSummary.trim().ifBlank { "Bengaluru to Mysore Day Package" },
-        preferredCategory = preferredCategory,
+        clientPhone = clientPhone.trim(),
+        routeSummary = routeSummary.trim(),
+        preferredCategory = preferredCategory.ifBlank { "Sedan" },
         quotedAmount = quotedAmount.coerceAtLeast(0L),
-        status = status,
+        status = status.ifBlank { "New" },
         source = source.trim().ifBlank { "Website" },
       )
       val result = if (existingLead != null && existingLead.id.isNotBlank() && existingLead.createdAt != null) {
@@ -575,7 +589,7 @@ class CrmViewModel(
         repository.addLead(payload)
       }
       result.onSuccess {
-        val actionWord = if (existingLead != null) "Updated" else "Added"
+        val actionWord = if (existingLead != null) "Updated" else "Saved"
         _statusBanner.value = "$actionWord lead for $resolvedClient in pipeline."
       }
     }
@@ -597,16 +611,16 @@ class CrmViewModel(
       if (lead.createdAt != null) {
         repository.updateLead(lead.copy(status = "Converted"))
       }
-      val base = lead.quotedAmount.coerceAtLeast(2000L)
+      val base = lead.quotedAmount.coerceAtLeast(0L)
       val gst = (base * _defaultGstPercent.value) / 100L
       val convertedBooking = Booking(
         customerName = lead.clientName,
         customerPhone = lead.clientPhone,
-        pickupLocation = lead.routeSummary.substringBefore(" to ").ifBlank { "Bengaluru Hub" },
-        dropLocation = lead.routeSummary.substringAfter(" to ", lead.routeSummary).ifBlank { "Outstation Drop" },
-        vehicleCategory = lead.preferredCategory,
-        vehicleNumber = "KA-01-MG-4590",
-        driverName = "Ramesh Kumar",
+        pickupLocation = lead.routeSummary.substringBefore(" to "),
+        dropLocation = lead.routeSummary.substringAfter(" to ", lead.routeSummary),
+        vehicleCategory = lead.preferredCategory.ifBlank { "Sedan" },
+        vehicleNumber = "",
+        driverName = "",
         tripStatus = "Active",
         paymentStatus = "Pending",
         paymentChannel = "UPI",
@@ -615,8 +629,8 @@ class CrmViewModel(
         parkingCharges = 0L,
         gstAmount = gst,
         totalAmount = base + gst,
-        expenseAmount = (base * 20L) / 100L,
-        distanceKm = 180L,
+        expenseAmount = 0L,
+        distanceKm = 0L,
         tripDate = todayDateString(),
       )
       repository.addBooking(convertedBooking).onSuccess {
@@ -637,24 +651,24 @@ class CrmViewModel(
     name: String,
     address: String = "",
     phone: String,
-    email: String = "customer@fleetcrm.in",
+    email: String = "",
     companyName: String = "",
-    gstin: String = "UNREGISTERED",
+    gstin: String = "",
     totalBookings: Long = existingCustomer?.totalBookings ?: 1L,
     totalBilled: Long = existingCustomer?.totalBilled ?: 0L,
     pendingBalance: Long = existingCustomer?.pendingBalance ?: 0L,
   ) {
-    val resolvedName = name.trim().ifBlank { "Walk-in Customer" }
-    val resolvedCompany = companyName.trim().ifBlank { resolvedName }
+    val resolvedName = name.trim()
+    val resolvedCompany = companyName.trim()
     viewModelScope.launch {
       val payload = (existingCustomer ?: Customer()).copy(
         name = resolvedName,
-        address = address.trim().ifBlank { "Bengaluru, Karnataka" },
-        phone = phone.trim().ifBlank { "+91 98201 00000" },
-        email = email.trim().ifBlank { "customer@fleetcrm.in" },
+        address = address.trim(),
+        phone = phone.trim(),
+        email = email.trim(),
         companyName = resolvedCompany,
-        gstin = gstin.trim().ifBlank { "UNREGISTERED" },
-        totalBookings = totalBookings.coerceAtLeast(1L),
+        gstin = gstin.trim(),
+        totalBookings = totalBookings.coerceAtLeast(0L),
         totalBilled = totalBilled.coerceAtLeast(0L),
         pendingBalance = pendingBalance.coerceAtLeast(0L),
       )
