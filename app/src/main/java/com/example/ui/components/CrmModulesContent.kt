@@ -574,8 +574,6 @@ fun CrmModuleDispatcher(
     CrmSection.VEHICLES_MAINTENANCE -> {
       // 0 = Vehicle Details & Vehicle Documents, 1 = Vehicle Maintenance Section
       var selectedVehicleTab by remember { mutableStateOf(0) }
-      // Sub-tab inside Vehicle Maintenance Section: 0 = Odometer & Service Schedule, 1 = Parts Changed, 2 = Note
-      var selectedMaintenanceSubTab by remember { mutableStateOf(0) }
 
       CrmModuleSectionHeader(
         title = "Vehicles Maintenance",
@@ -598,7 +596,7 @@ fun CrmModuleDispatcher(
       ) {
         val tabs = listOf(
           "1. Vehicle Details & Vehicle Documents (with Document Expiry Dates)",
-          "2. Vehicle Maintenance Section"
+          "2. Vehicle Maintenance Section (Odometer, Service Dates & Next Service Note)"
         )
         tabs.forEachIndexed { index, tabTitle ->
           val isSelected = selectedVehicleTab == index
@@ -621,50 +619,6 @@ fun CrmModuleDispatcher(
                 fontWeight = FontWeight.ExtraBold,
                 color = if (isSelected) Color.White else TextPrimaryDark
               )
-            }
-          }
-        }
-      }
-
-      if (selectedVehicleTab == 1) {
-        // Tabs inside Vehicle Maintenance Section (including Note tab)
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(CardSurface)
-            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-            .padding(6.dp),
-          verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-          val maintenanceSectionTabs = listOf(
-            "1. Present Odometer KM, Present Service Date & KM, Next Service Date & KM",
-            "2. What are the parts changed in the present service",
-            "3. Note"
-          )
-          maintenanceSectionTabs.forEachIndexed { subIdx, subTitle ->
-            val isSubSelected = selectedMaintenanceSubTab == subIdx
-            Surface(
-              color = if (isSubSelected) SidebarActiveBlue else Color.Transparent,
-              shape = RoundedCornerShape(9.dp),
-              modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(9.dp))
-                .clickable { selectedMaintenanceSubTab = subIdx }
-                .testTag("vehicle_maintenance_section_tab_$subIdx")
-            ) {
-              Box(
-                modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-                contentAlignment = Alignment.CenterStart
-              ) {
-                Text(
-                  text = subTitle,
-                  fontSize = 12.sp,
-                  fontWeight = FontWeight.ExtraBold,
-                  color = if (isSubSelected) Color.White else TextPrimaryDark
-                )
-              }
             }
           }
         }
@@ -761,7 +715,7 @@ fun CrmModuleDispatcher(
                   }
                 }
               } else {
-                // Tab 2: Vehicle Maintenance Section
+                // Tab 2: Vehicle Maintenance Section (Present Odometer KM, Present Service Date & KM, Next Service Date & KM, Parts Changed)
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -782,67 +736,30 @@ fun CrmModuleDispatcher(
                     )
                   }
 
-                  when (selectedMaintenanceSubTab) {
-                    0 -> {
-                      Text(
-                        text = "Present Odometer KM: ${v.presentRunningKilometers} km",
-                        fontSize = 13.sp,
-                        color = TextPrimaryDark,
-                        fontWeight = FontWeight.Bold
-                      )
-                      Text(
-                        text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
-                        fontSize = 12.sp,
-                        color = SidebarActiveBlue,
-                        fontWeight = FontWeight.SemiBold
-                      )
-                      Text(
-                        text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
-                        fontSize = 12.sp,
-                        color = KpiGreenIcon,
-                        fontWeight = FontWeight.SemiBold
-                      )
-                      Text(
-                        text = "Parts Changed in Present Service: ${v.partsChanged.ifBlank { "Not specified" }}",
-                        fontSize = 12.sp,
-                        color = TextPrimaryDark,
-                        fontWeight = FontWeight.SemiBold
-                      )
-                      Text(
-                        text = "Note: ${v.serviceNotes.ifBlank { "Not specified" }}",
-                        fontSize = 12.sp,
-                        color = TextSecondarySlate
-                      )
-                    }
-
-                    1 -> {
-                      Text(
-                        text = "What are the parts changed in the present service:",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = SidebarActiveBlue
-                      )
-                      Text(
-                        text = v.partsChanged.ifBlank { "Not specified" },
-                        fontSize = 13.sp,
-                        color = TextPrimaryDark
-                      )
-                    }
-
-                    else -> {
-                      Text(
-                        text = "Note:",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = SidebarActiveBlue
-                      )
-                      Text(
-                        text = v.serviceNotes.ifBlank { "No note recorded yet." },
-                        fontSize = 13.sp,
-                        color = TextPrimaryDark
-                      )
-                    }
-                  }
+                  Text(
+                    text = "Present Odometer KM: ${v.presentRunningKilometers} km",
+                    fontSize = 13.sp,
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.Bold
+                  )
+                  Text(
+                    text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
+                    fontSize = 12.sp,
+                    color = SidebarActiveBlue,
+                    fontWeight = FontWeight.SemiBold
+                  )
+                  Text(
+                    text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
+                    fontSize = 12.sp,
+                    color = KpiGreenIcon,
+                    fontWeight = FontWeight.SemiBold
+                  )
+                  Text(
+                    text = "Next Service Note: ${v.partsChanged.ifBlank { v.serviceNotes }.ifBlank { "Not specified" }}",
+                    fontSize = 12.sp,
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.SemiBold
+                  )
 
                   Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -1597,47 +1597,6 @@ fun AddVehicleMaintenanceDialog(
       onDismiss()
     }
   ) {
-    // Vertical Tabs inside Vehicle Maintenance Form (Up and Down)
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .clip(RoundedCornerShape(12.dp))
-        .background(CardSurface)
-        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-        .padding(6.dp),
-      verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-      val maintenanceFormTabs = listOf(
-        "1. Present Odometer KM, Present Service Date & KM, Next Service Date & KM",
-        "2. What are the parts changed in the present service",
-        "3. Note"
-      )
-      maintenanceFormTabs.forEachIndexed { idx, tabLabel ->
-        val isSelected = activeMaintenanceTab == idx
-        Surface(
-          color = if (isSelected) SidebarActiveBlue else CanvasBackground,
-          shape = RoundedCornerShape(9.dp),
-          modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(9.dp))
-            .clickable { activeMaintenanceTab = idx }
-            .testTag("maintenance_form_tab_$idx")
-        ) {
-          Box(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-            contentAlignment = Alignment.CenterStart
-          ) {
-            Text(
-              text = tabLabel,
-              fontSize = 12.sp,
-              fontWeight = FontWeight.ExtraBold,
-              color = if (isSelected) Color.White else TextPrimaryDark
-            )
-          }
-        }
-      }
-    }
-
     if (initialVehicle == null && availableVehicles.isNotEmpty()) {
       val vehicleOptions = availableVehicles.map { "${it.modelName} (${it.registrationNumber})" }
       val currentLabel = selectedVehicle?.let { "${it.modelName} (${it.registrationNumber})" } ?: vehicleOptions.first()
@@ -1680,104 +1639,77 @@ fun AddVehicleMaintenanceDialog(
       )
     }
 
-    when (activeMaintenanceTab) {
-      0 -> {
-        FormSectionCard(
-          stepNumber = "2",
-          sectionTitle = "Odometer & Service Schedule Details",
-          accentColor = SidebarActiveBlue
-        ) {
-          FormFieldInput(
-            value = presentRunningKmText,
-            onValueChange = { presentRunningKmText = it },
-            label = "Present Odometer KM",
-            placeholder = "Enter present odometer reading (km)",
-            icon = Icons.Default.Speed,
-            isNumeric = true,
-            modifier = Modifier.fillMaxWidth()
-          )
+    FormSectionCard(
+      stepNumber = "2",
+      sectionTitle = "Odometer & Service Schedule Details",
+      accentColor = SidebarActiveBlue
+    ) {
+      FormFieldInput(
+        value = presentRunningKmText,
+        onValueChange = { presentRunningKmText = it },
+        label = "Present Odometer KM",
+        placeholder = "Enter present odometer reading (km)",
+        icon = Icons.Default.Speed,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
 
-          FormCalendarDateField(
-            dateValue = serviceDate,
-            onDateChange = { serviceDate = it },
-            label = "Present Service Date (DD-MM-YYYY)",
-            modifier = Modifier.fillMaxWidth()
-          )
+      FormCalendarDateField(
+        dateValue = serviceDate,
+        onDateChange = { serviceDate = it },
+        label = "Present Service Date (DD-MM-YYYY)",
+        modifier = Modifier.fillMaxWidth()
+      )
 
-          FormFieldInput(
-            value = serviceKmText,
-            onValueChange = { serviceKmText = it },
-            label = "Present Service KM",
-            placeholder = "Enter kilometers at present service",
-            icon = Icons.Default.Speed,
-            isNumeric = true,
-            modifier = Modifier.fillMaxWidth()
-          )
+      FormFieldInput(
+        value = serviceKmText,
+        onValueChange = { serviceKmText = it },
+        label = "Present Service KM",
+        placeholder = "Enter kilometers at present service",
+        icon = Icons.Default.Speed,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
 
-          FormCalendarDateField(
-            dateValue = nextServiceDate,
-            onDateChange = { nextServiceDate = it },
-            label = "Next Service Date (DD-MM-YYYY)",
-            modifier = Modifier.fillMaxWidth()
-          )
+      FormCalendarDateField(
+        dateValue = nextServiceDate,
+        onDateChange = { nextServiceDate = it },
+        label = "Next Service Date (DD-MM-YYYY)",
+        modifier = Modifier.fillMaxWidth()
+      )
 
-          FormFieldInput(
-            value = nextServiceKmText,
-            onValueChange = { nextServiceKmText = it },
-            label = "Next Service Kilometers",
-            placeholder = "Enter next service due kilometers",
-            icon = Icons.Default.Speed,
-            isNumeric = true,
-            modifier = Modifier.fillMaxWidth()
-          )
+      FormFieldInput(
+        value = nextServiceKmText,
+        onValueChange = { nextServiceKmText = it },
+        label = "Next Service Kilometers",
+        placeholder = "Enter next service due kilometers",
+        icon = Icons.Default.Speed,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
 
-          FormFieldInput(
-            value = costText,
-            onValueChange = { costText = it },
-            label = "Service / Maintenance Cost (₹)",
-            placeholder = "Enter service cost",
-            icon = Icons.Default.CurrencyRupee,
-            isNumeric = true,
-            modifier = Modifier.fillMaxWidth()
-          )
-        }
-      }
+      FormFieldInput(
+        value = costText,
+        onValueChange = { costText = it },
+        label = "Service / Maintenance Cost (₹)",
+        placeholder = "Enter service cost",
+        icon = Icons.Default.CurrencyRupee,
+        isNumeric = true,
+        modifier = Modifier.fillMaxWidth()
+      )
 
-      1 -> {
-        FormSectionCard(
-          stepNumber = "2",
-          sectionTitle = "What are the parts changed in the present service",
-          accentColor = KpiGreenIcon
-        ) {
-          FormFieldInput(
-            value = partsChanged,
-            onValueChange = { partsChanged = it },
-            label = "What are the parts changed in the present service",
-            placeholder = "Enter parts replaced (e.g., Engine oil, oil filter, air filter, brake pads)",
-            icon = Icons.Default.Build,
-            singleLine = false,
-            modifier = Modifier.fillMaxWidth().testTag("parts_changed_input")
-          )
-        }
-      }
-
-      else -> {
-        FormSectionCard(
-          stepNumber = "2",
-          sectionTitle = "Note",
-          accentColor = KpiTealIcon
-        ) {
-          FormFieldInput(
-            value = notes,
-            onValueChange = { notes = it },
-            label = "Note",
-            placeholder = "Enter note",
-            icon = Icons.Default.Build,
-            singleLine = false,
-            modifier = Modifier.fillMaxWidth().testTag("vehicle_maintenance_notes_input")
-          )
-        }
-      }
+      FormFieldInput(
+        value = partsChanged,
+        onValueChange = {
+          partsChanged = it
+          notes = it
+        },
+        label = "Next Service Note",
+        placeholder = "Enter next service note",
+        icon = Icons.Default.Build,
+        singleLine = false,
+        modifier = Modifier.fillMaxWidth().testTag("next_service_note_input")
+      )
     }
   }
 }
