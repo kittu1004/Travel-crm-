@@ -574,14 +574,12 @@ fun CrmModuleDispatcher(
     CrmSection.VEHICLES_MAINTENANCE -> {
       // 0 = Vehicle Details & Vehicle Documents, 1 = Vehicle Maintenance Section
       var selectedVehicleTab by remember { mutableStateOf(0) }
+      // Sub-tab inside Vehicle Maintenance Section: 0 = Odometer & Service Schedule, 1 = Parts Changed, 2 = Note
+      var selectedMaintenanceSubTab by remember { mutableStateOf(0) }
 
       CrmModuleSectionHeader(
         title = "Vehicles Maintenance",
-        subtitle = if (selectedVehicleTab == 0) {
-          "Vehicle details & vehicle documents with document expiry dates in one form."
-        } else {
-          "Vehicle maintenance section: present odometer km, present service date & km, next service date & km, and parts changed."
-        },
+        subtitle = "",
         actionLabel = if (selectedVehicleTab == 0) "Add Vehicle & Documents" else "Add Vehicle Maintenance",
         onActionClick = if (selectedVehicleTab == 0) onOpenAddVehicle else onOpenAddVehicleMaintenance,
         onBackToDashboard = onBackToDashboard
@@ -600,7 +598,7 @@ fun CrmModuleDispatcher(
       ) {
         val tabs = listOf(
           "1. Vehicle Details & Vehicle Documents (with Document Expiry Dates)",
-          "2. Vehicle Maintenance Section (Odometer, Service Dates & Parts Changed)"
+          "2. Vehicle Maintenance Section"
         )
         tabs.forEachIndexed { index, tabTitle ->
           val isSelected = selectedVehicleTab == index
@@ -623,6 +621,50 @@ fun CrmModuleDispatcher(
                 fontWeight = FontWeight.ExtraBold,
                 color = if (isSelected) Color.White else TextPrimaryDark
               )
+            }
+          }
+        }
+      }
+
+      if (selectedVehicleTab == 1) {
+        // Tabs inside Vehicle Maintenance Section (including Note tab)
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(CardSurface)
+            .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+            .padding(6.dp),
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          val maintenanceSectionTabs = listOf(
+            "1. Present Odometer KM, Present Service Date & KM, Next Service Date & KM",
+            "2. What are the parts changed in the present service",
+            "3. Note"
+          )
+          maintenanceSectionTabs.forEachIndexed { subIdx, subTitle ->
+            val isSubSelected = selectedMaintenanceSubTab == subIdx
+            Surface(
+              color = if (isSubSelected) SidebarActiveBlue else Color.Transparent,
+              shape = RoundedCornerShape(9.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(9.dp))
+                .clickable { selectedMaintenanceSubTab = subIdx }
+                .testTag("vehicle_maintenance_section_tab_$subIdx")
+            ) {
+              Box(
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart
+              ) {
+                Text(
+                  text = subTitle,
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.ExtraBold,
+                  color = if (isSubSelected) Color.White else TextPrimaryDark
+                )
+              }
             }
           }
         }
@@ -719,7 +761,7 @@ fun CrmModuleDispatcher(
                   }
                 }
               } else {
-                // Tab 2: Vehicle Maintenance Section (Present Odometer KM, Present Service Date & KM, Next Service Date & KM, Parts Changed)
+                // Tab 2: Vehicle Maintenance Section
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -740,36 +782,66 @@ fun CrmModuleDispatcher(
                     )
                   }
 
-                  Text(
-                    text = "Present Odometer KM: ${v.presentRunningKilometers} km",
-                    fontSize = 13.sp,
-                    color = TextPrimaryDark,
-                    fontWeight = FontWeight.Bold
-                  )
-                  Text(
-                    text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
-                    fontSize = 12.sp,
-                    color = SidebarActiveBlue,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
-                    fontSize = 12.sp,
-                    color = KpiGreenIcon,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Parts Changed in Present Service: ${v.partsChanged.ifBlank { "Not specified" }}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  if (v.serviceNotes.isNotBlank()) {
-                    Text(
-                      text = "Service Notes: ${v.serviceNotes}",
-                      fontSize = 12.sp,
-                      color = TextSecondarySlate
-                    )
+                  when (selectedMaintenanceSubTab) {
+                    0 -> {
+                      Text(
+                        text = "Present Odometer KM: ${v.presentRunningKilometers} km",
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark,
+                        fontWeight = FontWeight.Bold
+                      )
+                      Text(
+                        text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
+                        fontSize = 12.sp,
+                        color = SidebarActiveBlue,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Text(
+                        text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
+                        fontSize = 12.sp,
+                        color = KpiGreenIcon,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Text(
+                        text = "Parts Changed in Present Service: ${v.partsChanged.ifBlank { "Not specified" }}",
+                        fontSize = 12.sp,
+                        color = TextPrimaryDark,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Text(
+                        text = "Note: ${v.serviceNotes.ifBlank { "Not specified" }}",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+
+                    1 -> {
+                      Text(
+                        text = "What are the parts changed in the present service:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = SidebarActiveBlue
+                      )
+                      Text(
+                        text = v.partsChanged.ifBlank { "Not specified" },
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark
+                      )
+                    }
+
+                    else -> {
+                      Text(
+                        text = "Note:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = SidebarActiveBlue
+                      )
+                      Text(
+                        text = v.serviceNotes.ifBlank { "No note recorded yet." },
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark
+                      )
+                    }
                   }
 
                   Row(
@@ -964,50 +1036,6 @@ fun CrmModuleDispatcher(
               }
             }
           }
-        }
-      }
-    }
-
-    CrmSection.EARNINGS_HISTORY -> {
-      val valid = bookings.filter { it.tripStatus != "Cancelled" }
-      val sedanSum = valid.filter {
-        it.vehicleCategory.equals("Sedan", ignoreCase = true) ||
-          it.vehicleCategory.equals("Sedans", ignoreCase = true)
-      }.sumOf { it.totalAmount }
-      val byCategory = listOf(
-        "Sedan" to sedanSum,
-        "Compact SUVs" to valid.filter { it.vehicleCategory == "Compact SUVs" }.sumOf { it.totalAmount },
-        "SUVs" to valid.filter { it.vehicleCategory == "SUVs" }.sumOf { it.totalAmount },
-        "Tourist Travellers" to valid.filter { it.vehicleCategory == "Tourist Travellers" }.sumOf { it.totalAmount }
-      )
-      CrmModuleSectionHeader(
-        title = "Earnings History & Fleet Profitability",
-        subtitle = "Breakdown of gross revenue across fleet categories and payment channels.",
-        onBackToDashboard = onBackToDashboard
-      )
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
-        border = BorderStroke(1.dp, CardBorder),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text("Revenue by Vehicle Category", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-          byCategory.forEach { (cat, sum) ->
-            TaxRow(cat, formatInr(sum), isBold = true)
-          }
-          HorizontalDivider(color = CardBorder)
-          TaxRow(
-            "Total Realized Earnings (Paid)",
-            formatInr(valid.filter { it.paymentStatus == "Paid" }.sumOf { it.totalAmount }),
-            isBold = true,
-            color = KpiGreenIcon
-          )
-          TaxRow(
-            "Total Trip Operating Expenses",
-            formatInr(valid.sumOf { it.expenseAmount }),
-            color = KpiOrangeIcon
-          )
         }
       }
     }
@@ -1342,52 +1370,383 @@ fun CrmModuleDispatcher(
       }
     }
 
-    CrmSection.REPORTS_EXPORT -> {
+    CrmSection.REPORTS_EXPORT, CrmSection.EARNINGS_HISTORY -> {
       val context = LocalContext.current
+      // 0 = All (Revenue, Expenses & Profits), 1 = Revenue History, 2 = Expenses History, 3 = Profits History
+      var selectedReportTab by remember { mutableStateOf(0) }
+      var activePdfReportType by remember { mutableStateOf<String?>(null) }
+
+      val valid = bookings.filter { it.tripStatus != "Cancelled" }
+      val totalRevenue = valid.sumOf { it.totalAmount }
+      val realizedRevenue = valid.filter { it.paymentStatus == "Paid" }.sumOf { it.totalAmount }
+      val pendingRevenue = valid.filter { it.paymentStatus != "Paid" }.sumOf { it.totalAmount }
+      val totalTripExpenses = valid.sumOf { it.expenseAmount }
+      val totalVehicleMaintenanceExpenses = vehicles.sumOf { it.maintenanceCost }
+      val combinedExpenses = totalTripExpenses + totalVehicleMaintenanceExpenses
+      val totalGstCollected = valid.sumOf { it.gstAmount }
+      val totalNetProfit = totalRevenue - combinedExpenses - totalGstCollected
+
+      val sedanSum = valid.filter {
+        it.vehicleCategory.equals("Sedan", ignoreCase = true) ||
+          it.vehicleCategory.equals("Sedans", ignoreCase = true)
+      }.sumOf { it.totalAmount }
+      val byCategory = listOf(
+        "Sedan" to sedanSum,
+        "Compact SUVs" to valid.filter { it.vehicleCategory == "Compact SUVs" }.sumOf { it.totalAmount },
+        "SUVs" to valid.filter { it.vehicleCategory == "SUVs" }.sumOf { it.totalAmount },
+        "Tourist Travellers" to valid.filter { it.vehicleCategory == "Tourist Travellers" }.sumOf { it.totalAmount }
+      )
+
       CrmModuleSectionHeader(
-        title = "Reports & CSV Export",
-        subtitle = "Generate and share audit-ready CSV reports for saved bookings, fleet revenue, and GST.",
+        title = "Reports & Export",
+        subtitle = "",
+        actionLabel = "Save Report PDF",
+        onActionClick = { activePdfReportType = "ALL" },
         onBackToDashboard = onBackToDashboard
       )
+
+      // Vertical Tabs (Up and Down) for Revenue History, Expenses History, Profits History
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 12.dp)
+          .clip(RoundedCornerShape(12.dp))
+          .background(CardSurface)
+          .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+          .padding(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+      ) {
+        val reportTabs = listOf(
+          "1. All Financial History (Revenue, Expenses & Profits)",
+          "2. Revenue History (${formatInr(totalRevenue)})",
+          "3. Expenses History (${formatInr(combinedExpenses)})",
+          "4. Profits History (${formatInr(totalNetProfit)})"
+        )
+        reportTabs.forEachIndexed { idx, tabLabel ->
+          val isSelected = selectedReportTab == idx
+          Surface(
+            color = if (isSelected) SidebarActiveBlue else Color.Transparent,
+            shape = RoundedCornerShape(9.dp),
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(RoundedCornerShape(9.dp))
+              .clickable { selectedReportTab = idx }
+              .testTag("reports_tab_$idx")
+          ) {
+            Box(
+              modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+              contentAlignment = Alignment.CenterStart
+            ) {
+              Text(
+                text = tabLabel,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (isSelected) Color.White else TextPrimaryDark
+              )
+            }
+          }
+        }
+      }
+
       Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // 1. REVENUE HISTORY SECTION
+        if (selectedReportTab == 0 || selectedReportTab == 1) {
+          Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, CardBorder),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+              Text("Revenue History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              HorizontalDivider(color = CardBorder)
+              TaxRow("Total Gross Revenue", formatInr(totalRevenue), isBold = true, color = SidebarActiveBlue)
+              TaxRow("Realized Paid Revenue", formatInr(realizedRevenue), isBold = true, color = KpiGreenIcon)
+              TaxRow("Pending Receivables", formatInr(pendingRevenue), isBold = true, color = KpiAmberIcon)
+              HorizontalDivider(color = CardBorder)
+              Text("Revenue by Vehicle Category", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextSecondarySlate)
+              byCategory.forEach { (cat, sum) ->
+                TaxRow(cat, formatInr(sum))
+              }
+
+              if (valid.isNotEmpty()) {
+                HorizontalDivider(color = CardBorder)
+                Text("Saved Trip Revenue Records (${valid.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = SidebarActiveBlue)
+                valid.forEachIndexed { idx, b ->
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(Color(0xFFF8FAFC))
+                      .padding(10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(
+                        text = "${idx + 1}. ${b.customerName} (${formatToDdMmYyyy(b.tripDate)})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "${b.pickupLocation} → ${b.dropLocation} • ${b.vehicleCategory} ${b.vehicleModel}".trim(),
+                        fontSize = 11.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                      Text(formatInr(b.totalAmount), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = KpiGreenIcon)
+                      Text("${b.paymentStatus} (${b.paymentChannel})", fontSize = 10.sp, color = TextSecondarySlate)
+                    }
+                  }
+                }
+              }
+
+              Button(
+                onClick = { activePdfReportType = "REVENUE" },
+                colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .testTag("save_revenue_history_pdf_button")
+              ) {
+                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Save Revenue History (PDF)", fontWeight = FontWeight.Bold, color = Color.White)
+              }
+            }
+          }
+        }
+
+        // 2. EXPENSES HISTORY SECTION
+        if (selectedReportTab == 0 || selectedReportTab == 2) {
+          Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, CardBorder),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+              Text("Expenses History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              HorizontalDivider(color = CardBorder)
+              TaxRow("Total Trip Operating Expenses", formatInr(totalTripExpenses), isBold = true, color = KpiOrangeIcon)
+              TaxRow("Total Vehicle Maintenance Expenses", formatInr(totalVehicleMaintenanceExpenses), isBold = true, color = KpiOrangeIcon)
+              HorizontalDivider(color = CardBorder)
+              TaxRow("Combined Total Expenses", formatInr(combinedExpenses), isBold = true, color = KpiRedIcon)
+
+              if (valid.isNotEmpty()) {
+                HorizontalDivider(color = CardBorder)
+                Text("Saved Trip Expenses Records (${valid.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = KpiOrangeIcon)
+                valid.forEachIndexed { idx, b ->
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(Color(0xFFF8FAFC))
+                      .padding(10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(
+                        text = "${idx + 1}. ${b.pickupLocation} → ${b.dropLocation} (${formatToDdMmYyyy(b.tripDate)})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "Driver: ${b.driverName.ifBlank { "N/A" }} • Vehicle: ${b.vehicleNumber.ifBlank { "N/A" }}",
+                        fontSize = 11.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                      Text(
+                        text = formatInr(b.expenseAmount),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp,
+                        color = KpiOrangeIcon
+                      )
+                      OutlinedButton(
+                        onClick = { onEditTripExpenses(b) },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp)
+                      ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text("Save Expense", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                      }
+                    }
+                  }
+                }
+              }
+
+              if (vehicles.any { it.maintenanceCost > 0L }) {
+                HorizontalDivider(color = CardBorder)
+                Text("Saved Vehicle Maintenance Expenses", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = KpiOrangeIcon)
+                vehicles.filter { it.maintenanceCost > 0L }.forEach { v ->
+                  TaxRow(
+                    "${v.modelName.ifBlank { "Vehicle" }} (${v.registrationNumber.ifBlank { "N/A" }}) - ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Service" }}",
+                    formatInr(v.maintenanceCost),
+                    color = KpiOrangeIcon
+                  )
+                }
+              }
+
+              Button(
+                onClick = { activePdfReportType = "EXPENSES" },
+                colors = ButtonDefaults.buttonColors(containerColor = KpiOrangeIcon),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .testTag("save_expenses_history_pdf_button")
+              ) {
+                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Save Expenses History (PDF)", fontWeight = FontWeight.Bold, color = Color.White)
+              }
+            }
+          }
+        }
+
+        // 3. PROFITS HISTORY SECTION
+        if (selectedReportTab == 0 || selectedReportTab == 3) {
+          Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, CardBorder),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+              Text("Profits History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              HorizontalDivider(color = CardBorder)
+              TaxRow("Total Gross Revenue", formatInr(totalRevenue), isBold = true, color = SidebarActiveBlue)
+              TaxRow("Less: Combined Expenses (Trips + Maintenance)", formatInr(combinedExpenses), color = KpiOrangeIcon)
+              TaxRow("Less: Output GST Collected", formatInr(totalGstCollected), color = TextSecondarySlate)
+              HorizontalDivider(color = CardBorder)
+              TaxRow(
+                "Total Net Operating Profit",
+                formatInr(totalNetProfit),
+                isBold = true,
+                color = if (totalNetProfit >= 0L) KpiGreenIcon else KpiRedIcon
+              )
+
+              if (valid.isNotEmpty()) {
+                HorizontalDivider(color = CardBorder)
+                Text("Saved Trip-by-Trip Profits History (${valid.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = KpiGreenIcon)
+                valid.forEachIndexed { idx, b ->
+                  val tripProfit = b.totalAmount - b.expenseAmount - b.gstAmount
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .clip(RoundedCornerShape(8.dp))
+                      .background(Color(0xFFF8FAFC))
+                      .padding(10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(
+                        text = "${idx + 1}. ${b.customerName} • ${b.pickupLocation} → ${b.dropLocation}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "Date: ${formatToDdMmYyyy(b.tripDate)} • Revenue: ${formatInr(b.totalAmount)} • Expense: ${formatInr(b.expenseAmount)}",
+                        fontSize = 11.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+                    Text(
+                      text = "Profit: ${formatInr(tripProfit)}",
+                      fontWeight = FontWeight.ExtraBold,
+                      fontSize = 13.sp,
+                      color = if (tripProfit >= 0L) KpiGreenIcon else KpiRedIcon
+                    )
+                  }
+                }
+              }
+
+              Button(
+                onClick = { activePdfReportType = "PROFITS" },
+                colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .testTag("save_profits_history_pdf_button")
+              ) {
+                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Save Profits History (PDF)", fontWeight = FontWeight.Bold, color = Color.White)
+              }
+            }
+          }
+        }
+
+        // 4. COMBINED EXPORT & SAVE CARD (PDF & CSV)
         Card(
           shape = RoundedCornerShape(16.dp),
           colors = CardDefaults.cardColors(containerColor = CardSurface),
           border = BorderStroke(1.dp, CardBorder),
           modifier = Modifier.fillMaxWidth()
         ) {
-          Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Executive Fleet & Revenue Statement", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+          Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Save & Export Complete Financial Statement", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(
-              "Total Saved Bookings: ${bookings.size} | Saved Drivers: ${drivers.size} | Saved Vehicles: ${vehicles.size} | Saved Customers: ${customers.size}",
+              "Saved Bookings: ${bookings.size} | Saved Drivers: ${drivers.size} | Saved Vehicles: ${vehicles.size} | Saved Customers: ${customers.size}",
               fontSize = 13.sp,
               color = TextSecondarySlate
             )
             Button(
+              onClick = { activePdfReportType = "ALL" },
+              colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("Save Revenue, Expenses & Profits Report (PDF)", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            Button(
               onClick = {
                 val csvBuilder = StringBuilder()
-                csvBuilder.append("Customer,Category,VehicleModel,VehicleNo,Driver,Status,Payment,BaseINR,GSTINR,TotalINR\n")
-                bookings.forEach { b ->
+                csvBuilder.append("Date,Customer,Route,Category,VehicleModel,VehicleNo,Driver,PaymentStatus,RevenueINR,ExpenseINR,GSTINR,NetProfitINR\n")
+                valid.forEach { b ->
+                  val netProfit = b.totalAmount - b.expenseAmount - b.gstAmount
                   csvBuilder.append(
-                    "${b.customerName},${b.vehicleCategory},${b.vehicleModel},${b.vehicleNumber},${b.driverName},${b.tripStatus},${b.paymentStatus},${b.baseAmount},${b.gstAmount},${b.totalAmount}\n"
+                    "${formatToDdMmYyyy(b.tripDate)},${b.customerName},${b.pickupLocation} to ${b.dropLocation},${b.vehicleCategory},${b.vehicleModel},${b.vehicleNumber},${b.driverName},${b.paymentStatus},${b.totalAmount},${b.expenseAmount},${b.gstAmount},$netProfit\n"
                   )
                 }
                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                   type = "text/plain"
-                  putExtra(Intent.EXTRA_SUBJECT, "FleetCRM Revenue & GST Export")
+                  putExtra(Intent.EXTRA_SUBJECT, "Revenue, Expenses & Profits History CSV")
                   putExtra(Intent.EXTRA_TEXT, csvBuilder.toString())
                 }
-                context.startActivity(Intent.createChooser(sendIntent, "Export FleetCRM CSV Report"))
+                context.startActivity(Intent.createChooser(sendIntent, "Export Revenue, Expenses & Profits CSV"))
               },
               colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
-              shape = RoundedCornerShape(10.dp)
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier.fillMaxWidth()
             ) {
               Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
               Spacer(modifier = Modifier.width(8.dp))
-              Text("Export & Share CSV Ledger", fontWeight = FontWeight.Bold)
+              Text("Export & Share Revenue, Expenses & Profits CSV", fontWeight = FontWeight.Bold, color = Color.White)
             }
           }
         }
+      }
+
+      if (activePdfReportType != null) {
+        FinancialReportPdfDownloadDialog(
+          bookings = bookings,
+          vehicles = vehicles,
+          agencyName = agencyName,
+          agencyGstin = agencyGstin,
+          reportType = activePdfReportType ?: "ALL",
+          onDismiss = { activePdfReportType = null }
+        )
       }
     }
 

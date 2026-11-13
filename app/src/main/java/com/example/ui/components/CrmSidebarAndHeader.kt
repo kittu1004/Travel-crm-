@@ -101,7 +101,6 @@ fun CrmDarkSidebar(
       badgeCount = driverCount
     ),
     SidebarNavItem(CrmSection.TRIP_EXPENSES, Icons.Default.SwapVert, Color(0xFFFB923C)),
-    SidebarNavItem(CrmSection.EARNINGS_HISTORY, null, Color.Transparent),
     SidebarNavItem(CrmSection.CUSTOMERS_ACCOUNTS, Icons.Default.Groups, Color(0xFF60A5FA)),
     SidebarNavItem(CrmSection.USER_ROLES, Icons.Default.ManageAccounts, Color(0xFF818CF8)),
     SidebarNavItem(CrmSection.REPORTS_EXPORT, Icons.Default.BarChart, Color(0xFF4ADE80)),

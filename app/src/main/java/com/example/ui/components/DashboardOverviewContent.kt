@@ -202,7 +202,7 @@ fun DashboardOverviewContent(
       icon = Icons.Default.CurrencyRupee,
       iconTint = KpiGreenIcon,
       iconBg = KpiGreenBg,
-      targetSection = CrmSection.EARNINGS_HISTORY
+      targetSection = CrmSection.REPORTS_EXPORT
     ),
     KpiCardSpec(
       id = "monthly_revenue",
@@ -211,7 +211,7 @@ fun DashboardOverviewContent(
       icon = Icons.Default.TrendingUp,
       iconTint = KpiBlueIcon,
       iconBg = KpiBlueBg,
-      targetSection = CrmSection.EARNINGS_HISTORY
+      targetSection = CrmSection.REPORTS_EXPORT
     ),
     KpiCardSpec(
       id = "pending_payments",
