@@ -66,8 +66,11 @@ import com.example.ui.theme.SidebarActiveBlue
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondarySlate
 import java.io.File
+import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,6 +79,63 @@ const val GITHUB_REPO_SLUG = "kittu1004/Travel-crm-"
 const val GITHUB_DIRECT_APK_URL = "https://github.com/kittu1004/Travel-crm-/releases/latest/download/FleetCRM-debug.apk"
 const val GITHUB_RELEASES_PAGE_URL = "https://github.com/kittu1004/Travel-crm-/releases"
 const val GITHUB_ACTIONS_PAGE_URL = "https://github.com/kittu1004/Travel-crm-/actions"
+
+private val WEBSITE_ASSET_FILES = listOf(
+  "index.html",
+  "styles.css",
+  "app.js",
+  "README.md"
+)
+
+suspend fun exportWebsiteZipToUri(context: Context, destUri: Uri): Result<Long> = withContext(Dispatchers.IO) {
+  runCatching {
+    var totalBytes = 0L
+    context.contentResolver.openOutputStream(destUri)?.use { rawOut ->
+      ZipOutputStream(rawOut).use { zipOut ->
+        for (fileName in WEBSITE_ASSET_FILES) {
+          val entry = ZipEntry("travel-crm-website/$fileName")
+          zipOut.putNextEntry(entry)
+          context.assets.open("travel-crm-website/$fileName").use { inStream ->
+            totalBytes += inStream.copyTo(zipOut)
+          }
+          zipOut.closeEntry()
+        }
+      }
+    } ?: error("Unable to open destination stream")
+    totalBytes
+  }
+}
+
+suspend fun shareWebsiteZipFile(context: Context): Result<Unit> = withContext(Dispatchers.IO) {
+  runCatching {
+    val cacheDir = File(context.cacheDir, "apks").apply { mkdirs() }
+    val zipFile = File(cacheDir, "travel-crm-website.zip")
+    ZipOutputStream(FileOutputStream(zipFile)).use { zipOut ->
+      for (fileName in WEBSITE_ASSET_FILES) {
+        val entry = ZipEntry("travel-crm-website/$fileName")
+        zipOut.putNextEntry(entry)
+        context.assets.open("travel-crm-website/$fileName").use { inStream ->
+          inStream.copyTo(zipOut)
+        }
+        zipOut.closeEntry()
+      }
+    }
+    val uri = FileProvider.getUriForFile(
+      context,
+      "${context.packageName}.fileprovider",
+      zipFile
+    )
+    withContext(Dispatchers.Main) {
+      val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/zip"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, "travel-crm-website.zip")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      }
+      context.startActivity(Intent.createChooser(shareIntent, "Save or Share travel-crm-website.zip"))
+    }
+  }
+}
 
 suspend fun copyInstalledApkToUri(context: Context, destUri: Uri): Result<Long> = withContext(Dispatchers.IO) {
   runCatching {
@@ -142,6 +202,28 @@ fun ApkDownloadCenterDialog(
   var isCheckingGitHub by remember { mutableStateOf(true) }
   var isGitHubReleaseLive by remember { mutableStateOf(false) }
   var isExportingLocal by remember { mutableStateOf(false) }
+  var isExportingWebsiteZip by remember { mutableStateOf(false) }
+
+  val saveWebsiteZipLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument("application/zip")
+  ) { uri: Uri? ->
+    if (uri != null) {
+      scope.launch {
+        isExportingWebsiteZip = true
+        val res = exportWebsiteZipToUri(context, uri)
+        isExportingWebsiteZip = false
+        res.fold(
+          onSuccess = {
+            onStatusMessage("Saved travel-crm-website.zip (index.html, styles.css, app.js, README.md) to device!")
+            onDismiss()
+          },
+          onFailure = { e ->
+            onStatusMessage("Failed to save website ZIP: ${e.localizedMessage}")
+          }
+        )
+      }
+    }
+  }
 
   val saveApkLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument("application/vnd.android.package-archive")
@@ -186,7 +268,7 @@ fun ApkDownloadCenterDialog(
       Column {
         Surface(color = KpiGreenBg, shape = RoundedCornerShape(6.dp)) {
           Text(
-            text = "DIRECT APK DOWNLOAD & EXPORT CENTER",
+            text = "WEBSITE FOLDER & APK DOWNLOAD CENTER",
             color = KpiGreenIcon,
             fontSize = 10.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -194,7 +276,7 @@ fun ApkDownloadCenterDialog(
           )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text("Download FleetCRM-debug.apk", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+        Text("Download Travel CRM Website & APK", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
       }
     },
     text = {
@@ -204,6 +286,64 @@ fun ApkDownloadCenterDialog(
           .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
       ) {
+        // 0. Complete Travel CRM Website Folder (Single Folder ZIP)
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(KpiBlueBg)
+            .border(1.dp, KpiBlueIcon.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+            .padding(14.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "Complete Travel CRM Website Folder (ZIP)",
+              fontWeight = FontWeight.ExtraBold,
+              fontSize = 14.sp,
+              color = TextPrimaryDark
+            )
+          }
+          Text(
+            text = "Single folder '/travel-crm-website/' containing index.html, styles.css, app.js, and README.md with all FleetCRM modules, mobile-number login, bold text, and PDF/CSV export.",
+            fontSize = 12.sp,
+            color = TextSecondarySlate
+          )
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+              onClick = { saveWebsiteZipLauncher.launch("travel-crm-website.zip") },
+              enabled = !isExportingWebsiteZip,
+              colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier
+                .weight(1f)
+                .testTag("save_website_zip_button")
+            ) {
+              Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(if (isExportingWebsiteZip) "Saving..." else "Download Website ZIP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            OutlinedButton(
+              onClick = {
+                scope.launch {
+                  shareWebsiteZipFile(context)
+                }
+              },
+              shape = RoundedCornerShape(10.dp),
+              border = BorderStroke(1.dp, SidebarActiveBlue)
+            ) {
+              Icon(Icons.Default.Share, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(15.dp))
+              Spacer(modifier = Modifier.width(4.dp))
+              Text("Share ZIP", fontSize = 12.sp, color = SidebarActiveBlue, fontWeight = FontWeight.Bold)
+            }
+          }
+        }
+
+        HorizontalDivider(color = CardBorder)
+
         // 1. Instant Local APK Save (Never 404s!)
         Column(
           modifier = Modifier
@@ -325,7 +465,7 @@ fun ApkDownloadCenterDialog(
             Text(
               text = "GitHub returned 404 because this project has not been pushed to github.com/$GITHUB_REPO_SLUG yet (or the repository is still Private / building its first release).\n\n" +
                 "• In Google AI Studio (Browser): Click the Settings (⚙️) menu in the top-right toolbar and choose 'Download APK' or 'Push to GitHub' -> kittu1004/Travel-crm.\n" +
-                "• Inside this App right now: Tap the green 'Save APK to Device' button above to immediately save FleetCRM-debug.apk!",
+                "• Inside this App right now: Tap 'Download Website ZIP' or 'Save APK to Device' above!",
               fontSize = 12.sp,
               color = TextPrimaryDark,
               lineHeight = 17.sp

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetCRM — Travel &amp; Fleet Management Website</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ====================================================================
+       1. MOBILE NUMBER + PASSWORD AUTHENTICATION VIEW (NO EMAIL LOGIN)
+       ==================================================================== -->
+  <div id="auth-view" class="auth-wrapper">
+    <div class="auth-wave-header">
+      <div class="auth-logo-box">&#128663;</div>
+      <div class="auth-brand-title">FleetCRM</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="segmented-tabs">
+        <button id="tab-login" class="segmented-tab-btn active" onclick="switchAuthTab('login')">Login</button>
+        <button id="tab-register" class="segmented-tab-btn" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <div id="auth-alert" class="alert-banner" style="display:none;"></div>
+
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <div class="field-group">
+          <label class="field-label">Mobile Number</label>
+          <div class="input-box">
+            <span class="input-icon">&#128222;</span>
+            <span class="input-prefix">+91</span>
+            <input type="tel" id="auth-mobile" maxlength="10" placeholder="Enter 10-digit mobile number" required />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <div class="input-box">
+            <span class="input-icon">&#128274;</span>
+            <input type="password" id="auth-password" placeholder="Enter password" required />
+          </div>
+        </div>
+
+        <div id="confirm-password-group" class="field-group" style="display:none;">
+          <label class="field-label">Confirm Password</label>
+          <div class="input-box">
+            <span class="input-icon">&#128274;</span>
+            <input type="password" id="auth-confirm-password" placeholder="Re-enter password" />
+          </div>
+        </div>
+
+        <div id="forgot-password-row" style="overflow:hidden;">
+          <button type="button" class="text-link-btn" onclick="openResetPasswordModal()">Forgot Password?</button>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="primary-submit-btn">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       2. MAIN FLEETCRM COMMAND CENTER APPLICATION
+       ==================================================================== -->
+  <div id="app-view" class="crm-layout" style="display:none;">
+    <!-- Sidebar Navigation -->
+    <aside id="crm-sidebar" class="crm-sidebar">
+      <div id="sidebar-nav-container" class="sidebar-nav-list"></div>
+      <div class="sidebar-watermark">&#128663;</div>
+    </aside>
+
+    <!-- Main Content Viewport -->
+    <main class="crm-main">
+      <div id="module-wave-backdrop" class="module-wave-backdrop" style="display:none;"></div>
+
+      <div class="crm-content-inner">
+        <!-- Top Command Header -->
+        <header class="top-command-bar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="blue-drawer-btn" onclick="toggleMobileSidebar()" title="Open CRM Navigation Menu">&#9776;</button>
+            <h1 id="dashboard-top-heading" class="dashboard-main-title">Dashboard View</h1>
+          </div>
+          <div id="module-top-car-icon" style="display:none; color:#FFFFFF; font-size:28px;">&#128663;</div>
+        </header>
+
+        <!-- Status Notification Banner -->
+        <div id="status-banner" class="alert-banner success" style="display:none; cursor:pointer;" onclick="hideStatusBanner()"></div>
+
+        <!-- Dynamic Section Viewport -->
+        <div id="section-content"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ====================================================================
+       3. DYNAMIC FORM & INVOICE PDF MODAL CONTAINER
+       ==================================================================== -->
+  <div id="modal-backdrop" class="modal-backdrop">
+    <div id="modal-container" class="crm-form-modal"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
