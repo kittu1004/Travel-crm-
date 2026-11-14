@@ -146,9 +146,10 @@ fun CrmModuleSectionHeader(
         onClick = onActionClick,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-          containerColor = Color.White,
-          contentColor = SidebarActiveBlue
+          containerColor = SidebarActiveBlue,
+          contentColor = Color.White
         ),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp),
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         modifier = Modifier.testTag("module_primary_action_button")
