@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.CrmSection
 import com.example.ui.theme.CardBorder
-import com.example.ui.theme.SidebarNavy
+import com.example.ui.theme.SidebarActiveBlue
 import com.example.ui.theme.TextPrimaryDark
 
 data class SidebarNavItem(
@@ -310,15 +310,21 @@ fun CommandCenterHeader(
           IconButton(
             onClick = onOpenDrawer,
             modifier = Modifier
-              .size(40.dp)
-              .clip(RoundedCornerShape(10.dp))
-              .background(if (isDashboard) SidebarNavy else Color(0xFF0A1437).copy(alpha = 0.72f))
-              .then(
-                if (!isDashboard) {
-                  Modifier.border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(10.dp))
-                } else {
-                  Modifier
-                }
+              .size(48.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(
+                Brush.linearGradient(
+                  colors = listOf(
+                    Color(0xFF0058DF),
+                    SidebarActiveBlue,
+                    Color(0xFF0EA5E9)
+                  )
+                )
+              )
+              .border(
+                width = 1.dp,
+                color = if (isDashboard) Color(0xFF93C5FD).copy(alpha = 0.5f) else Color.White.copy(alpha = 0.38f),
+                shape = RoundedCornerShape(12.dp)
               )
               .testTag("open_drawer_button")
           ) {
@@ -326,7 +332,7 @@ fun CommandCenterHeader(
               imageVector = Icons.Default.Menu,
               contentDescription = "Open CRM Navigation Menu",
               tint = Color.White,
-              modifier = Modifier.size(20.dp)
+              modifier = Modifier.size(22.dp)
             )
           }
           Spacer(modifier = Modifier.width(10.dp))
