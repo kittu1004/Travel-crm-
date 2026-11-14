@@ -299,7 +299,7 @@ fun CrmModuleDispatcher(
                   ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(5.dp))
-                    Text("Edit Details", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                    Text("Edit Details", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                   }
                   if (lead.status != "Converted") {
                     Button(
@@ -487,7 +487,7 @@ fun CrmModuleDispatcher(
                   ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(5.dp))
-                    Text("Edit Details", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                    Text("Edit Details", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                   }
                   if (booking.tripStatus != "Completed") {
                     OutlinedButton(
@@ -498,7 +498,7 @@ fun CrmModuleDispatcher(
                     ) {
                       Icon(Icons.Default.Check, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(4.dp))
-                      Text("Complete", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                      Text("Complete", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                     }
                   }
                   if (booking.tripStatus != "Cancelled") {
@@ -508,7 +508,7 @@ fun CrmModuleDispatcher(
                       contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                       shape = RoundedCornerShape(10.dp)
                     ) {
-                      Text("Cancel", fontSize = 12.sp, color = KpiRedIcon, fontWeight = FontWeight.SemiBold)
+                      Text("Cancel", fontSize = 12.sp, color = KpiRedIcon, fontWeight = FontWeight.Bold)
                     }
                   }
                   IconButton(
@@ -658,7 +658,7 @@ fun CrmModuleDispatcher(
                   ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(5.dp))
-                    Text("Edit Invoice", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                    Text("Edit Invoice", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                   }
                 }
               }
@@ -903,7 +903,7 @@ fun CrmModuleDispatcher(
                     ) {
                       Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(5.dp))
-                      Text("Edit Vehicle & Documents", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                      Text("Edit Vehicle & Documents", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(34.dp)) {
@@ -966,19 +966,19 @@ fun CrmModuleDispatcher(
                         text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
                         fontSize = 12.sp,
                         color = SidebarActiveBlue,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                       )
                       Text(
                         text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
                         fontSize = 12.sp,
                         color = KpiGreenIcon,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                       )
                       Text(
                         text = "Next Service Note: ${v.partsChanged.ifBlank { v.serviceNotes }.ifBlank { "Not specified" }}",
                         fontSize = 12.sp,
                         color = TextPrimaryDark,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                       )
                     }
                   }
@@ -996,7 +996,7 @@ fun CrmModuleDispatcher(
                     ) {
                       Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(5.dp))
-                      Text("Edit Vehicle Maintenance", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                      Text("Edit Vehicle Maintenance", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(34.dp)) {
@@ -1106,13 +1106,13 @@ fun CrmModuleDispatcher(
                       text = "DL No: ${d.licenseNumber.ifBlank { "N/A" }} • Aadhar: ${d.aadharNumber.ifBlank { "Not specified" }}",
                       fontSize = 12.sp,
                       color = TextPrimaryDark,
-                      fontWeight = FontWeight.SemiBold
+                      fontWeight = FontWeight.Bold
                     )
                     Text(
                       text = "Selfie: ${d.selfiePhotoUri.ifBlank { "Not uploaded" }}",
                       fontSize = 12.sp,
                       color = KpiTealIcon,
-                      fontWeight = FontWeight.SemiBold
+                      fontWeight = FontWeight.Bold
                     )
                     Text(
                       text = "Documents: ${d.documentsUploaded.ifBlank { "No documents uploaded" }}",
@@ -1142,7 +1142,7 @@ fun CrmModuleDispatcher(
                   ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(5.dp))
-                    Text("Edit Driver", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                    Text("Edit Driver", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                   }
                   Spacer(modifier = Modifier.width(6.dp))
                   IconButton(onClick = { onDeleteDriver(d.id) }, modifier = Modifier.size(34.dp)) {
@@ -1215,7 +1215,7 @@ fun CrmModuleDispatcher(
                   ) {
                     Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit Expenses", fontSize = 11.5.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                    Text("Edit Expenses", fontSize = 11.5.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                   }
                 }
                 Surface(
@@ -1390,7 +1390,7 @@ fun CrmModuleDispatcher(
               Text(
                 text = "${idx + 1}. ${cust.name} • Mobile: ${cust.phone.ifBlank { "N/A" }} • Address: ${cust.address.ifBlank { cust.companyName.ifBlank { "N/A" } }} • Total Trips: ${cust.totalBookings}",
                 fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = TextPrimaryDark
               )
             }
@@ -1470,7 +1470,7 @@ fun CrmModuleDispatcher(
                       text = "Mobile Number: ${c.phone.ifBlank { "N/A" }}",
                       fontSize = 12.5.sp,
                       color = TextPrimaryDark,
-                      fontWeight = FontWeight.SemiBold
+                      fontWeight = FontWeight.Bold
                     )
                   }
                 }
@@ -2200,13 +2200,13 @@ private fun TaxRow(
   ) {
     Text(
       text = label,
-      fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
+      fontWeight = FontWeight.Bold,
       fontSize = 14.sp,
       color = TextPrimaryDark
     )
     Text(
       text = value,
-      fontWeight = if (isBold) FontWeight.ExtraBold else FontWeight.SemiBold,
+      fontWeight = if (isBold) FontWeight.ExtraBold else FontWeight.Bold,
       fontSize = 15.sp,
       color = color
     )

@@ -193,7 +193,7 @@ suspend fun generateBookingInvoicePdf(
     val subWhitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
       color = AndroidColor.parseColor("#DBEAFE")
       textSize = 9.5f
-      typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
     val blueSectionHeaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
       color = AndroidColor.parseColor("#1D63B8")
@@ -208,12 +208,12 @@ suspend fun generateBookingInvoicePdf(
     val regularSlatePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
       color = AndroidColor.parseColor("#475569")
       textSize = 9.5f
-      typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
     val mutedSmallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
       color = AndroidColor.parseColor("#64748B")
       textSize = 8.5f
-      typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+      typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
     val hasGst = booking.gstAmount > 0L
@@ -1320,7 +1320,7 @@ private fun InvoiceLineRow(label: String, value: String) {
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Text(label, fontSize = 12.sp, color = TextSecondarySlate)
-    Text(value, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimaryDark)
+    Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
   }
 }
 

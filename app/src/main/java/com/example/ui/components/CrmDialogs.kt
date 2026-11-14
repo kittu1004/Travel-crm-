@@ -535,7 +535,7 @@ private fun FormSelectDropdown(
             Text(
               text = option,
               fontSize = 13.sp,
-              fontWeight = if (option == selectedValue) FontWeight.ExtraBold else FontWeight.Medium,
+              fontWeight = if (option == selectedValue) FontWeight.ExtraBold else FontWeight.Bold,
               color = if (option == selectedValue) SidebarActiveBlue else TextPrimaryDark
             )
           },
@@ -624,7 +624,7 @@ private fun FormCalendarDateField(
       },
       dismissButton = {
         TextButton(onClick = { showCalendarDialog = false }) {
-          Text("Cancel", color = TextSecondarySlate, fontWeight = FontWeight.SemiBold)
+          Text("Cancel", color = TextSecondarySlate, fontWeight = FontWeight.Bold)
         }
       }
     ) {
@@ -1044,7 +1044,7 @@ fun NewBookingDialog(
               "GST: ₹0 (Not Applied)"
             },
             fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = KpiGreenIcon
           )
           Text(

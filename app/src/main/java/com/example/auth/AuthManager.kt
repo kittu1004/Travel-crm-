@@ -449,7 +449,7 @@ fun AuthScreen(
               text = errorMessage ?: "",
               color = KpiRedIcon,
               fontSize = 13.sp,
-              fontWeight = FontWeight.SemiBold,
+              fontWeight = FontWeight.Bold,
               modifier = Modifier.padding(12.dp),
               textAlign = TextAlign.Center
             )
@@ -467,7 +467,7 @@ fun AuthScreen(
               text = infoMessage ?: "",
               color = KpiGreenIcon,
               fontSize = 13.sp,
-              fontWeight = FontWeight.SemiBold,
+              fontWeight = FontWeight.Bold,
               modifier = Modifier.padding(12.dp),
               textAlign = TextAlign.Center
             )
@@ -600,7 +600,7 @@ private fun ResetPasswordDialog(
             text = dialogError ?: "",
             color = KpiRedIcon,
             fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.Bold
           )
         }
       }

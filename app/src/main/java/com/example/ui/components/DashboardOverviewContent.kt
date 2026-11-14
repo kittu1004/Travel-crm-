@@ -658,7 +658,7 @@ fun RevenueCashflowPerformanceCard(
             Column(modifier = Modifier.weight(1f)) {
               Text(
                 text = "${booking.customerName} • ${booking.vehicleCategory}",
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = TextPrimaryDark
               )
@@ -744,7 +744,7 @@ private fun CategoryFilterPill(
         text = category.label,
         color = chipText,
         fontSize = 12.sp,
-        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold
+        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold
       )
     }
   }

@@ -340,7 +340,7 @@ fun ApkDownloadCenterDialog(
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.weight(1f)
               ) {
-                Text("Open Releases", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text("Open Releases", fontSize = 11.sp, fontWeight = FontWeight.Bold)
               }
               OutlinedButton(
                 onClick = {
@@ -350,7 +350,7 @@ fun ApkDownloadCenterDialog(
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.weight(1f)
               ) {
-                Text("Open Actions", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text("Open Actions", fontSize = 11.sp, fontWeight = FontWeight.Bold)
               }
             }
           }

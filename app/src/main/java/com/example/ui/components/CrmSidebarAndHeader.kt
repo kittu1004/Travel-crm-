@@ -228,7 +228,7 @@ fun CrmDarkSidebar(
             text = item.section.title,
             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.92f),
             fontSize = 13.5.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = FontWeight.Bold,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
