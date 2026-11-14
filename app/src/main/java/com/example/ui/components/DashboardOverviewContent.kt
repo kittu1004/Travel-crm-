@@ -89,6 +89,11 @@ import com.example.ui.theme.ViewDetailsPeachBg
 import com.example.ui.theme.ViewDetailsPeachBorder
 import com.example.ui.theme.ViewDetailsPeachText
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+
 data class KpiCardSpec(
   val id: String,
   val title: String,
@@ -96,6 +101,7 @@ data class KpiCardSpec(
   val icon: ImageVector,
   val iconTint: Color,
   val iconBg: Color,
+  val gradientColors: List<Color>,
   val targetSection: CrmSection,
 )
 
@@ -116,7 +122,6 @@ fun DashboardOverviewContent(
   onToggleBookingPayment: (Booking) -> Unit,
 ) {
   val totalBookings = bookings.size
-  val activeTrips = bookings.count { it.tripStatus == "Active" }
   val completedTrips = bookings.count { it.tripStatus == "Completed" }
   val cancelledTrips = bookings.count { it.tripStatus == "Cancelled" }
 
@@ -146,8 +151,9 @@ fun DashboardOverviewContent(
       title = "TOTAL\nBOOKINGS",
       valueText = totalBookings.toString(),
       icon = Icons.Default.Receipt,
-      iconTint = KpiBlueIcon,
-      iconBg = KpiBlueBg,
+      iconTint = Color(0xFF0062E6),
+      iconBg = Color(0xFFDCF2FF),
+      gradientColors = listOf(Color(0xFF0058DF), Color(0xFF0099F7), Color(0xFF12BEFF)),
       targetSection = CrmSection.BOOKING_HISTORY
     ),
     KpiCardSpec(
@@ -155,8 +161,9 @@ fun DashboardOverviewContent(
       title = "COMPLETED\nTRIPS",
       valueText = completedTrips.toString(),
       icon = Icons.Default.CheckCircle,
-      iconTint = KpiGreenIcon,
-      iconBg = KpiGreenBg,
+      iconTint = Color(0xFF1B9B28),
+      iconBg = Color(0xFFE2FCE3),
+      gradientColors = listOf(Color(0xFF128822), Color(0xFF28BC29), Color(0xFF3BD52A)),
       targetSection = CrmSection.BOOKING_HISTORY
     ),
     KpiCardSpec(
@@ -164,8 +171,9 @@ fun DashboardOverviewContent(
       title = "CANCELLED\nTRIPS",
       valueText = cancelledTrips.toString(),
       icon = Icons.Default.Cancel,
-      iconTint = KpiRedIcon,
-      iconBg = KpiRedBg,
+      iconTint = Color(0xFFD91522),
+      iconBg = Color(0xFFFFE8EE),
+      gradientColors = listOf(Color(0xFFC8194E), Color(0xFFEE426B), Color(0xFFFF6E8E)),
       targetSection = CrmSection.BOOKING_HISTORY
     ),
     KpiCardSpec(
@@ -173,8 +181,9 @@ fun DashboardOverviewContent(
       title = "TOTAL\nDRIVERS",
       valueText = totalDrivers.toString(),
       icon = Icons.Default.HowToReg,
-      iconTint = KpiPurpleIcon,
-      iconBg = KpiPurpleBg,
+      iconTint = Color(0xFF6B20E0),
+      iconBg = Color(0xFFEFE6FF),
+      gradientColors = listOf(Color(0xFF5A14D1), Color(0xFF833CE2), Color(0xFFA265F2)),
       targetSection = CrmSection.DRIVER_ROSTER
     ),
     KpiCardSpec(
@@ -182,8 +191,9 @@ fun DashboardOverviewContent(
       title = "TOTAL\nVEHICLES",
       valueText = totalVehicles.toString(),
       icon = Icons.Default.DirectionsCar,
-      iconTint = KpiOrangeIcon,
-      iconBg = KpiOrangeBg,
+      iconTint = Color(0xFFE06800),
+      iconBg = Color(0xFFFFF4C4),
+      gradientColors = listOf(Color(0xFFE56700), Color(0xFFF69608), Color(0xFFFFC115)),
       targetSection = CrmSection.VEHICLES_MAINTENANCE
     ),
     KpiCardSpec(
@@ -191,8 +201,9 @@ fun DashboardOverviewContent(
       title = "TOTAL\nCUSTOMERS",
       valueText = totalCustomers.toString(),
       icon = Icons.Default.People,
-      iconTint = KpiTealIcon,
-      iconBg = KpiTealBg,
+      iconTint = Color(0xFF0083A1),
+      iconBg = Color(0xFFDBF9FD),
+      gradientColors = listOf(Color(0xFF007590), Color(0xFF00A8C6), Color(0xFF05D2E8)),
       targetSection = CrmSection.CUSTOMERS_ACCOUNTS
     ),
     KpiCardSpec(
@@ -200,8 +211,9 @@ fun DashboardOverviewContent(
       title = "TODAY'S\nREVENUE",
       valueText = formatInr(todaysRevenue),
       icon = Icons.Default.CurrencyRupee,
-      iconTint = KpiGreenIcon,
-      iconBg = KpiGreenBg,
+      iconTint = Color(0xFF0068E8),
+      iconBg = Color(0xFFDCF2FF),
+      gradientColors = listOf(Color(0xFF005AE0), Color(0xFF00A0FA), Color(0xFF0EC3FF)),
       targetSection = CrmSection.REPORTS_EXPORT
     ),
     KpiCardSpec(
@@ -209,8 +221,9 @@ fun DashboardOverviewContent(
       title = "MONTHLY\nREVENUE",
       valueText = formatInr(monthlyRevenue),
       icon = Icons.Default.TrendingUp,
-      iconTint = KpiBlueIcon,
-      iconBg = KpiBlueBg,
+      iconTint = Color(0xFF701BE0),
+      iconBg = Color(0xFFF1E6FF),
+      gradientColors = listOf(Color(0xFF6512D6), Color(0xFF9338EA), Color(0xFFB661F8)),
       targetSection = CrmSection.REPORTS_EXPORT
     ),
     KpiCardSpec(
@@ -218,8 +231,9 @@ fun DashboardOverviewContent(
       title = "PENDING\nPAYMENTS",
       valueText = formatInr(pendingPayments),
       icon = Icons.Default.NotificationsActive,
-      iconTint = KpiAmberIcon,
-      iconBg = KpiAmberBg,
+      iconTint = Color(0xFFDF5900),
+      iconBg = Color(0xFFFFEEAE),
+      gradientColors = listOf(Color(0xFFE53A24), Color(0xFFF55D3B), Color(0xFFFF8258)),
       targetSection = CrmSection.INVOICES_BILLING
     ),
     KpiCardSpec(
@@ -227,8 +241,9 @@ fun DashboardOverviewContent(
       title = "GST\nDETAILS",
       valueText = formatInr(totalGst),
       icon = Icons.Default.Percent,
-      iconTint = KpiTealIcon,
-      iconBg = KpiTealBg,
+      iconTint = Color(0xFF0E8A45),
+      iconBg = Color(0xFFE3FCE5),
+      gradientColors = listOf(Color(0xFF158228), Color(0xFF2AB034), Color(0xFF42CF47)),
       targetSection = CrmSection.GST_TAX
     ),
   )
@@ -269,57 +284,101 @@ fun KpiMetricCard(
 ) {
   Card(
     modifier = modifier
-      .clip(RoundedCornerShape(14.dp))
+      .clip(RoundedCornerShape(16.dp))
       .clickable { onCardClick() }
       .testTag("kpi_card_${spec.id}"),
-    shape = RoundedCornerShape(14.dp),
-    colors = CardDefaults.cardColors(containerColor = CardSurface),
-    border = BorderStroke(1.dp, CardBorder.copy(alpha = 0.7f)),
-    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    shape = RoundedCornerShape(16.dp),
+    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
   ) {
-    Column(
+    Box(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(14.dp),
-      verticalArrangement = Arrangement.SpaceBetween
+        .background(
+          brush = Brush.linearGradient(
+            colors = spec.gradientColors,
+            start = Offset(0f, 0f),
+            end = Offset(600f, 450f)
+          )
+        )
     ) {
-      Text(
-        text = spec.title,
-        style = MaterialTheme.typography.labelSmall,
-        color = TextMutedUppercase,
-        lineHeight = 14.sp
-      )
+      // Subtle layered wave curves matching the uploaded dashboard screenshot
+      Canvas(modifier = Modifier.matchParentSize()) {
+        val w = size.width
+        val h = size.height
 
-      Spacer(modifier = Modifier.height(18.dp))
+        val wave1 = Path().apply {
+          moveTo(0f, h * 0.85f)
+          cubicTo(
+            w * 0.35f, h * 0.62f,
+            w * 0.65f, h * 0.30f,
+            w, h * 0.22f
+          )
+          lineTo(w, h)
+          lineTo(0f, h)
+          close()
+        }
+        drawPath(path = wave1, color = Color.White.copy(alpha = 0.11f))
 
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom
+        val wave2 = Path().apply {
+          moveTo(w * 0.18f, h)
+          cubicTo(
+            w * 0.50f, h * 0.68f,
+            w * 0.78f, h * 0.52f,
+            w, h * 0.46f
+          )
+          lineTo(w, h)
+          close()
+        }
+        drawPath(path = wave2, color = Color.White.copy(alpha = 0.13f))
+      }
+
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.SpaceBetween
       ) {
         Text(
-          text = spec.valueText,
-          fontSize = 24.sp,
+          text = spec.title,
+          fontSize = 13.sp,
           fontWeight = FontWeight.ExtraBold,
-          color = TextPrimaryDark,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          modifier = Modifier.weight(1f)
+          color = Color.White,
+          lineHeight = 16.sp,
+          letterSpacing = 0.3.sp
         )
 
-        Box(
-          modifier = Modifier
-            .size(34.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(spec.iconBg),
-          contentAlignment = Alignment.Center
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.Bottom
         ) {
-          Icon(
-            imageVector = spec.icon,
-            contentDescription = null,
-            tint = spec.iconTint,
-            modifier = Modifier.size(18.dp)
+          Text(
+            text = spec.valueText,
+            fontSize = 25.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
           )
+
+          Box(
+            modifier = Modifier
+              .size(40.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(spec.iconBg),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              imageVector = spec.icon,
+              contentDescription = null,
+              tint = spec.iconTint,
+              modifier = Modifier.size(21.dp)
+            )
+          }
         }
       }
     }

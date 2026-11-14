@@ -53,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.auth.AuthScreen
+import com.example.auth.MobileAuthStore
 import com.example.auth.authStateFlow
 import com.example.auth.signOut
 import com.example.data.Booking
@@ -119,16 +120,23 @@ fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
     return
   }
 
+  val context = LocalContext.current
   val currentUser by auth.authStateFlow().collectAsStateWithLifecycle(initialValue = auth.currentUser)
   val user = currentUser
+  var isMobileLoggedIn by remember { mutableStateOf(MobileAuthStore.isLoggedIn(context)) }
 
-  if (user == null) {
-    AuthScreen()
+  if (user == null || !isMobileLoggedIn) {
+    AuthScreen(
+      onAuthSuccess = {
+        isMobileLoggedIn = MobileAuthStore.isLoggedIn(context)
+      }
+    )
   } else {
     key(user.uid) {
       FleetCrmCommandCenterScreen(
         currentUserId = user.uid,
-        userEmail = user.email ?: "admin@fleetcrm.in"
+        userEmail = user.email ?: "admin@fleetcrm.in",
+        onSignedOut = { isMobileLoggedIn = false }
       )
     }
   }
@@ -138,6 +146,7 @@ fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
 fun FleetCrmCommandCenterScreen(
   currentUserId: String,
   userEmail: String,
+  onSignedOut: () -> Unit = {},
 ) {
   val viewModel: CrmViewModel = viewModel(
     key = currentUserId,
@@ -382,7 +391,8 @@ fun FleetCrmCommandCenterScreen(
               onLoadDemoData = { viewModel.loadLiveDemoData() },
               onSignOut = {
                 val credentialManager = CredentialManager.create(context)
-                signOut(credentialManager = credentialManager, scope = scope)
+                onSignedOut()
+                signOut(context = context, credentialManager = credentialManager, scope = scope)
               },
               onEditBooking = { booking ->
                 editingBooking = booking
