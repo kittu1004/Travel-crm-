@@ -20,15 +20,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,6 +48,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,6 +81,7 @@ import com.example.ui.theme.KpiBlueBg
 import com.example.ui.theme.KpiBlueIcon
 import com.example.ui.theme.KpiGreenBg
 import com.example.ui.theme.KpiGreenIcon
+import com.example.ui.theme.KpiOrangeBg
 import com.example.ui.theme.KpiOrangeIcon
 import com.example.ui.theme.KpiPurpleBg
 import com.example.ui.theme.KpiPurpleIcon
@@ -95,7 +105,7 @@ fun CrmModuleSectionHeader(
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(bottom = 14.dp),
+      .padding(bottom = 18.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -106,14 +116,14 @@ fun CrmModuleSectionHeader(
       IconButton(
         onClick = onBackToDashboard,
         modifier = Modifier
-          .size(36.dp)
+          .size(38.dp)
           .clip(RoundedCornerShape(10.dp))
           .background(Color.White)
-          .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+          .border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
           .testTag("back_to_dashboard_button")
       ) {
         Icon(
-          imageVector = Icons.Default.ArrowBack,
+          imageVector = Icons.AutoMirrored.Filled.ArrowBack,
           contentDescription = "Back to Dashboard Overview",
           tint = TextPrimaryDark,
           modifier = Modifier.size(18.dp)
@@ -124,23 +134,28 @@ fun CrmModuleSectionHeader(
         Text(
           text = title,
           style = MaterialTheme.typography.titleLarge,
-          color = TextPrimaryDark,
+          color = Color.White,
           fontWeight = FontWeight.ExtraBold
         )
       }
     }
 
     if (actionLabel != null && onActionClick != null) {
+      Spacer(modifier = Modifier.width(8.dp))
       Button(
         onClick = onActionClick,
-        shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = Color.White,
+          contentColor = SidebarActiveBlue
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         modifier = Modifier.testTag("module_primary_action_button")
       ) {
         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(actionLabel, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(actionLabel, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
       }
     }
   }
@@ -210,20 +225,36 @@ fun CrmModuleDispatcher(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           leads.forEach { lead ->
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Column(modifier = Modifier.padding(16.dp)) {
+              Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically
                 ) {
-                  Column(modifier = Modifier.weight(1f)) {
-                    Text(lead.clientName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimaryDark)
-                    Text("${lead.clientPhone} • Source: ${lead.source}", fontSize = 12.sp, color = TextSecondarySlate)
+                  Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Box(
+                      modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(SidebarActiveBlue),
+                      contentAlignment = Alignment.Center
+                    ) {
+                      Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(lead.clientName, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = TextPrimaryDark)
+                      Text("${lead.clientPhone} • Source: ${lead.source}", fontSize = 12.sp, color = TextSecondarySlate)
+                    }
                   }
                   StatusBadge(
                     text = lead.status,
@@ -231,47 +262,57 @@ fun CrmModuleDispatcher(
                     fg = if (lead.status == "Converted") KpiGreenIcon else KpiBlueIcon
                   )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                  text = "Route: ${lead.routeSummary} (${lead.preferredCategory})",
-                  fontSize = 13.sp,
-                  color = TextPrimaryDark
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
+                Surface(
+                  color = Color(0xFFECF3FF),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.fillMaxWidth()
                 ) {
-                  Text(
-                    text = "Quoted: ${formatInr(lead.quotedAmount)}",
-                    fontWeight = FontWeight.ExtraBold,
-                    color = SidebarActiveBlue,
-                    fontSize = 15.sp
-                  )
-                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedButton(
-                      onClick = { onEditLead(lead) },
-                      shape = RoundedCornerShape(8.dp),
-                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                  Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Text(
+                      text = "Route: ${lead.routeSummary} (${lead.preferredCategory})",
+                      fontSize = 12.5.sp,
+                      color = TextPrimaryDark,
+                      modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                      text = formatInr(lead.quotedAmount),
+                      fontWeight = FontWeight.ExtraBold,
+                      color = SidebarActiveBlue,
+                      fontSize = 15.sp
+                    )
+                  }
+                }
+                FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(6.dp),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  OutlinedButton(
+                    onClick = { onEditLead(lead) },
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                  ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("Edit Details", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                  }
+                  if (lead.status != "Converted") {
+                    Button(
+                      onClick = { onConvertLead(lead) },
+                      colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
+                      shape = RoundedCornerShape(10.dp),
+                      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
-                      Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Details", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                      Text("Convert to Booking", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
-                    if (lead.status != "Converted") {
-                      Button(
-                        onClick = { onConvertLead(lead) },
-                        colors = ButtonDefaults.buttonColors(containerColor = NewBookingGreen),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                      ) {
-                        Text("Convert to Booking", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                      }
-                    }
-                    IconButton(onClick = { onDeleteLead(lead.id) }) {
-                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Lead", tint = KpiRedIcon)
-                    }
+                  }
+                  IconButton(onClick = { onDeleteLead(lead.id) }, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Lead", tint = KpiRedIcon)
                   }
                 }
               }
@@ -294,125 +335,187 @@ fun CrmModuleDispatcher(
           message = "No saved bookings yet. Tap 'New Booking' to create a booking."
         )
       } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           bookings.forEach { booking ->
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Column(modifier = Modifier.padding(16.dp)) {
+              Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically
                 ) {
-                  Column(modifier = Modifier.weight(1f)) {
-                    val companySuffix = if (booking.companyName.isNotBlank()) " • ${booking.companyName}" else ""
-                    val modelSuffix = if (booking.vehicleModel.isNotBlank()) " • ${booking.vehicleModel}" else ""
-                    Text(
-                      "${booking.customerName}$companySuffix (${booking.vehicleCategory}$modelSuffix)",
-                      fontWeight = FontWeight.Bold,
-                      fontSize = 16.sp,
-                      color = TextPrimaryDark
-                    )
-                    Text(
-                      "${booking.pickupLocation} → ${booking.dropLocation}",
-                      fontSize = 13.sp,
-                      color = TextSecondarySlate
-                    )
+                  Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Box(
+                      modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(SidebarActiveBlue),
+                      contentAlignment = Alignment.Center
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.DirectionsCar,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                      )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                      val companySuffix = if (booking.companyName.isNotBlank()) " • ${booking.companyName}" else ""
+                      val modelSuffix = if (booking.vehicleModel.isNotBlank()) " • ${booking.vehicleModel}" else ""
+                      Text(
+                        "${booking.customerName}$companySuffix (${booking.vehicleCategory}$modelSuffix)",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        "${booking.pickupLocation} → ${booking.dropLocation}",
+                        fontSize = 13.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
                   }
+                  Spacer(modifier = Modifier.width(8.dp))
                   StatusBadge(
                     text = booking.tripStatus,
                     bg = when (booking.tripStatus) {
                       "Completed" -> KpiGreenBg
                       "Cancelled" -> KpiRedBg
-                      else -> KpiTealBg
+                      else -> Color(0xFFDCFCE7)
                     },
                     fg = when (booking.tripStatus) {
                       "Completed" -> KpiGreenIcon
                       "Cancelled" -> KpiRedIcon
-                      else -> KpiTealIcon
+                      else -> Color(0xFF15803D)
                     }
                   )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+
                 val driverPhoneInfo = if (booking.driverPhone.isNotBlank()) " (${booking.driverPhone})" else ""
                 val modelInfo = if (booking.vehicleModel.isNotBlank()) "${booking.vehicleModel} - " else ""
-                Text(
-                  "Driver: ${booking.driverName}$driverPhoneInfo • Vehicle: $modelInfo${booking.vehicleNumber} • Date: ${formatToDdMmYyyy(booking.tripDate)}",
-                  fontSize = 12.sp,
-                  color = TextSecondarySlate
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                FlowRow(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                  Column {
-                    Text(
-                      "Total: ${formatInr(booking.totalAmount)}",
-                      fontWeight = FontWeight.ExtraBold,
-                      fontSize = 14.sp,
-                      color = TextPrimaryDark
-                    )
-                    Text(
-                      text = buildString {
-                        append("Base: ${formatInr(booking.baseAmount)}")
-                        if (booking.tollCharges > 0) append(" • Toll: ${formatInr(booking.tollCharges)}")
-                        if (booking.parkingCharges > 0) append(" • Parking: ${formatInr(booking.parkingCharges)}")
-                        if (booking.gstAmount > 0) append(" • GST: ${formatInr(booking.gstAmount)}") else append(" • No GST")
-                      },
-                      fontSize = 11.sp,
-                      color = TextSecondarySlate
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                  Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                  ) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(15.dp))
+                    Text("Driver: ${booking.driverName}$driverPhoneInfo", fontSize = 12.5.sp, color = TextPrimaryDark)
                   }
-                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Button(
-                      onClick = { onDownloadInvoicePdf(booking) },
-                      colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
-                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                      shape = RoundedCornerShape(8.dp)
-                    ) {
-                      Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(13.dp))
-                      Spacer(modifier = Modifier.width(4.dp))
-                      Text("Invoice PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                  Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                  ) {
+                    Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(15.dp))
+                    Text("Vehicle: $modelInfo${booking.vehicleNumber}", fontSize = 12.5.sp, color = TextPrimaryDark)
+                  }
+                  Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                  ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(15.dp))
+                    Text("Date: ${formatToDdMmYyyy(booking.tripDate)}", fontSize = 12.5.sp, color = TextPrimaryDark)
+                  }
+                }
+
+                // Soft icy-blue Total highlight container matching Screenshot 1
+                Surface(
+                  color = Color(0xFFECF3FF),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Icon(
+                      imageVector = Icons.Default.Payments,
+                      contentDescription = null,
+                      tint = SidebarActiveBlue,
+                      modifier = Modifier.size(22.dp)
+                    )
+                    Column {
+                      Text(
+                        "Total: ${formatInr(booking.totalAmount)}",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = buildString {
+                          append("Base: ${formatInr(booking.baseAmount)}")
+                          if (booking.tollCharges > 0) append(" • Toll: ${formatInr(booking.tollCharges)}")
+                          if (booking.parkingCharges > 0) append(" • Parking: ${formatInr(booking.parkingCharges)}")
+                          if (booking.gstAmount > 0) append(" • GST: ${formatInr(booking.gstAmount)}") else append(" • No GST")
+                        },
+                        fontSize = 11.5.sp,
+                        color = TextSecondarySlate
+                      )
                     }
+                  }
+                }
+
+                FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(6.dp),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  Button(
+                    onClick = { onDownloadInvoicePdf(booking) },
+                    colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
+                  ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("Invoice PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                  }
+                  OutlinedButton(
+                    onClick = { onEditBooking(booking) },
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
+                  ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("Edit Details", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                  }
+                  if (booking.tripStatus != "Completed") {
                     OutlinedButton(
-                      onClick = { onEditBooking(booking) },
-                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                      shape = RoundedCornerShape(8.dp)
+                      onClick = { onUpdateBookingStatus(booking, "Completed") },
+                      border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                      shape = RoundedCornerShape(10.dp)
                     ) {
-                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                      Icon(Icons.Default.Check, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                       Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Details", fontSize = 11.sp)
+                      Text("Complete", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
                     }
-                    if (booking.tripStatus != "Completed") {
-                      OutlinedButton(
-                        onClick = { onUpdateBookingStatus(booking, "Completed") },
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(8.dp)
-                      ) {
-                        Text("Complete", fontSize = 11.sp)
-                      }
-                    }
-                    if (booking.tripStatus != "Cancelled") {
-                      OutlinedButton(
-                        onClick = { onUpdateBookingStatus(booking, "Cancelled") },
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(8.dp)
-                      ) {
-                        Text("Cancel", fontSize = 11.sp, color = KpiRedIcon)
-                      }
-                    }
-                    IconButton(
-                      onClick = { onDeleteBooking(booking.id) },
-                      modifier = Modifier.size(32.dp)
+                  }
+                  if (booking.tripStatus != "Cancelled") {
+                    OutlinedButton(
+                      onClick = { onUpdateBookingStatus(booking, "Cancelled") },
+                      border = BorderStroke(1.dp, KpiRedIcon.copy(alpha = 0.35f)),
+                      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                      shape = RoundedCornerShape(10.dp)
                     ) {
-                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = TextSecondarySlate)
+                      Text("Cancel", fontSize = 12.sp, color = KpiRedIcon, fontWeight = FontWeight.SemiBold)
                     }
+                  }
+                  IconButton(
+                    onClick = { onDeleteBooking(booking.id) },
+                    modifier = Modifier.size(34.dp)
+                  ) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = TextSecondarySlate)
                   }
                 }
               }
@@ -433,88 +536,129 @@ fun CrmModuleDispatcher(
       if (bookings.isEmpty()) {
         EmptyModuleCard("No saved invoices yet. Tap 'Generate New Invoice' above to create an invoice.")
       } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           bookings.forEachIndexed { idx, b ->
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Row(
+              Column(
                 modifier = Modifier
                   .fillMaxWidth()
                   .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(10.dp)
               ) {
-                Column(modifier = Modifier.weight(1f)) {
-                  val companyLabel = if (b.companyName.isNotBlank()) " (${b.companyName})" else ""
-                  Text(
-                    "INV-2026-${1001 + idx} • ${b.customerName}$companyLabel",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = TextPrimaryDark
-                  )
-                  val modelLabel = if (b.vehicleModel.isNotBlank()) " • Model: ${b.vehicleModel}" else ""
-                  Text(
-                    text = "Date: ${formatToDdMmYyyy(b.tripDate)} • Category: ${b.vehicleCategory}$modelLabel • Driver: ${b.driverName}${if (b.driverPhone.isNotBlank()) " (${b.driverPhone})" else ""}",
-                    fontSize = 11.sp,
-                    color = TextSecondarySlate
-                  )
-                  Text(
-                    text = buildString {
-                      append("Base: ${formatInr(b.baseAmount)}")
-                      append(" • Toll: ${formatInr(b.tollCharges)}")
-                      append(" • Parking: ${formatInr(b.parkingCharges)}")
-                      if (b.gstAmount > 0L) append(" • GST: ${formatInr(b.gstAmount)}") else append(" • GST: Optional (₹0)")
-                    },
-                    fontSize = 12.sp,
-                    color = TextSecondarySlate
-                  )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                  Text(
-                    formatInr(b.totalAmount),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = TextPrimaryDark
-                  )
-                  Spacer(modifier = Modifier.height(4.dp))
-                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedButton(
-                      onClick = { onEditInvoice(b) },
-                      contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                      shape = RoundedCornerShape(8.dp)
-                    ) {
-                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
-                      Spacer(modifier = Modifier.width(3.dp))
-                      Text("Edit", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
-                      onClick = { onDownloadInvoicePdf(b) },
-                      contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                      shape = RoundedCornerShape(8.dp)
-                    ) {
-                      Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(14.dp))
-                      Spacer(modifier = Modifier.width(4.dp))
-                      Text("PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
-                    }
-                    Surface(
-                      color = if (b.paymentStatus == "Paid") KpiGreenBg else KpiAmberBg,
-                      shape = RoundedCornerShape(8.dp),
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Box(
                       modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onToggleBookingPayment(b) }
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(SidebarActiveBlue),
+                      contentAlignment = Alignment.Center
                     ) {
+                      Icon(Icons.Default.ReceiptLong, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                      val companyLabel = if (b.companyName.isNotBlank()) " (${b.companyName})" else ""
                       Text(
-                        text = if (b.paymentStatus == "Paid") "PAID ↻" else "PENDING ↻",
-                        color = if (b.paymentStatus == "Paid") KpiGreenIcon else KpiAmberIcon,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        "INV-2026-${1001 + idx} • ${b.customerName}$companyLabel",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark
+                      )
+                      val modelLabel = if (b.vehicleModel.isNotBlank()) " • ${b.vehicleModel}" else ""
+                      Text(
+                        text = "Date: ${formatToDdMmYyyy(b.tripDate)} • ${b.vehicleCategory}$modelLabel • Driver: ${b.driverName}${if (b.driverPhone.isNotBlank()) " (${b.driverPhone})" else ""}",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
                       )
                     }
+                  }
+                  Spacer(modifier = Modifier.width(8.dp))
+                  Surface(
+                    color = if (b.paymentStatus == "Paid") KpiGreenBg else KpiAmberBg,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                      .clip(RoundedCornerShape(8.dp))
+                      .clickable { onToggleBookingPayment(b) }
+                  ) {
+                    Text(
+                      text = if (b.paymentStatus == "Paid") "PAID ↻" else "PENDING ↻",
+                      color = if (b.paymentStatus == "Paid") KpiGreenIcon else KpiAmberIcon,
+                      fontSize = 11.sp,
+                      fontWeight = FontWeight.Bold,
+                      modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                  }
+                }
+
+                Surface(
+                  color = Color(0xFFECF3FF),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Icon(Icons.Default.Payments, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(22.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(
+                        "Total: ${formatInr(b.totalAmount)}",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = buildString {
+                          append("Base: ${formatInr(b.baseAmount)}")
+                          append(" • Toll: ${formatInr(b.tollCharges)}")
+                          append(" • Parking: ${formatInr(b.parkingCharges)}")
+                          if (b.gstAmount > 0L) append(" • GST: ${formatInr(b.gstAmount)}") else append(" • No GST")
+                        },
+                        fontSize = 11.5.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+                  }
+                }
+
+                FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(6.dp),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  Button(
+                    onClick = { onDownloadInvoicePdf(b) },
+                    colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
+                  ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("Download PDF", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                  }
+                  OutlinedButton(
+                    onClick = { onEditInvoice(b) },
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
+                  ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("Edit Invoice", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
                   }
                 }
               }
@@ -539,22 +683,43 @@ fun CrmModuleDispatcher(
         onBackToDashboard = onBackToDashboard
       )
       Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
         border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier.fillMaxWidth()
       ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text("GSTIN: $agencyGstin ($agencyName)", fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(SidebarActiveBlue),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.Percent, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
+            Text("GSTIN: $agencyGstin ($agencyName)", fontWeight = FontWeight.ExtraBold, color = TextPrimaryDark, fontSize = 14.sp)
+          }
           HorizontalDivider(color = CardBorder)
           TaxRow("Total Taxable Passenger Fare Value", formatInr(taxableValue))
           TaxRow("Output CGST (${defaultGstPercent / 2.0}%)", formatInr(cgst))
           TaxRow("Output SGST (${defaultGstPercent / 2.0}%)", formatInr(sgst))
           TaxRow("Gross Output GST Collected", formatInr(totalGst), isBold = true)
-          HorizontalDivider(color = CardBorder)
-          TaxRow("Collected Net GST", formatInr(totalGst), isBold = true, color = KpiTealIcon)
+          Surface(
+            color = Color(0xFFECF3FF),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+              TaxRow("Collected Net GST", formatInr(totalGst), isBold = true, color = SidebarActiveBlue)
+            }
+          }
 
-          Spacer(modifier = Modifier.height(6.dp))
           Button(
             onClick = onDownloadGstDetails,
             colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue),
@@ -584,41 +749,47 @@ fun CrmModuleDispatcher(
       )
 
       // Vertical Tabs (Up and Down, not side-by-side)
-      Column(
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
           .fillMaxWidth()
           .padding(bottom = 12.dp)
-          .clip(RoundedCornerShape(12.dp))
-          .background(CardSurface)
-          .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-          .padding(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        val tabs = listOf(
-          "1. Vehicle Details & Vehicle Documents (with Document Expiry Dates)",
-          "2. Vehicle Maintenance Section (Odometer, Service Dates & Next Service Note)"
-        )
-        tabs.forEachIndexed { index, tabTitle ->
-          val isSelected = selectedVehicleTab == index
-          Surface(
-            color = if (isSelected) SidebarActiveBlue else Color.Transparent,
-            shape = RoundedCornerShape(9.dp),
-            modifier = Modifier
-              .fillMaxWidth()
-              .clip(RoundedCornerShape(9.dp))
-              .clickable { selectedVehicleTab = index }
-              .testTag("vehicles_module_tab_$index")
-          ) {
-            Box(
-              modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-              contentAlignment = Alignment.CenterStart
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          val tabs = listOf(
+            "1. Vehicle Details & Vehicle Documents (with Document Expiry Dates)",
+            "2. Vehicle Maintenance Section (Odometer, Service Dates & Next Service Note)"
+          )
+          tabs.forEachIndexed { index, tabTitle ->
+            val isSelected = selectedVehicleTab == index
+            Surface(
+              color = if (isSelected) SidebarActiveBlue else Color(0xFFECF3FF),
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { selectedVehicleTab = index }
+                .testTag("vehicles_module_tab_$index")
             ) {
-              Text(
-                text = tabTitle,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = if (isSelected) Color.White else TextPrimaryDark
-              )
+              Box(
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart
+              ) {
+                Text(
+                  text = tabTitle,
+                  fontSize = 13.sp,
+                  fontWeight = FontWeight.ExtraBold,
+                  color = if (isSelected) Color.White else TextPrimaryDark
+                )
+              }
             }
           }
         }
@@ -633,66 +804,91 @@ fun CrmModuleDispatcher(
           }
         )
       } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           vehicles.forEach { v ->
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
               if (selectedVehicleTab == 0) {
                 // Tab 1: Vehicle Details & Vehicle Documents (with Expiry Dates)
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                   ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                      Text(
-                        text = v.modelName.ifBlank { "Unnamed Vehicle" },
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp,
-                        color = TextPrimaryDark
-                      )
-                      Text(
-                        text = "Registration No: ${v.registrationNumber.ifBlank { "N/A" }} • Manufacturing Year: ${v.manufacturingYear.ifBlank { "N/A" }}",
-                        fontSize = 12.sp,
-                        color = TextSecondarySlate
-                      )
+                    Row(
+                      modifier = Modifier.weight(1f),
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                      Box(
+                        modifier = Modifier
+                          .size(38.dp)
+                          .clip(RoundedCornerShape(10.dp))
+                          .background(SidebarActiveBlue),
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                      }
+                      Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                          text = v.modelName.ifBlank { "Unnamed Vehicle" },
+                          fontWeight = FontWeight.ExtraBold,
+                          fontSize = 15.sp,
+                          color = TextPrimaryDark
+                        )
+                        Text(
+                          text = "Reg No: ${v.registrationNumber.ifBlank { "N/A" }} • Year: ${v.manufacturingYear.ifBlank { "N/A" }}",
+                          fontSize = 12.sp,
+                          color = TextSecondarySlate
+                        )
+                      }
                     }
                     Surface(
-                      color = KpiBlueBg,
+                      color = Color(0xFFECF3FF),
                       shape = RoundedCornerShape(8.dp)
                     ) {
                       Text(
-                        text = "Category: ${v.category.ifBlank { "Sedan" }}",
+                        text = v.category.ifBlank { "Sedan" },
                         color = SidebarActiveBlue,
-                        fontSize = 12.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                       )
                     }
                   }
 
-                  HorizontalDivider(color = CardBorder)
-
-                  Text(
-                    text = "Insurance: ${v.insuranceDetails.ifBlank { "Not specified" }} • Expiry Date: ${formatToDdMmYyyy(v.insuranceExpiryDate).ifBlank { "Not set" }}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
-                  )
-                  Text(
-                    text = "Fitness (FC): ${v.fitnessDetails.ifBlank { "Not specified" }} • Expiry Date: ${formatToDdMmYyyy(v.fitnessExpiryDate).ifBlank { "Not set" }}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
-                  )
-                  Text(
-                    text = "Pollution (PUC): ${v.pollutionDetails.ifBlank { "Not specified" }} • Expiry Date: ${formatToDdMmYyyy(v.pollutionExpiryDate).ifBlank { "Not set" }}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark
-                  )
+                  Surface(
+                    color = Color(0xFFECF3FF),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                  ) {
+                    Column(
+                      modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                      verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                      Text(
+                        text = "Insurance: ${v.insuranceDetails.ifBlank { "Not specified" }} • Expiry: ${formatToDdMmYyyy(v.insuranceExpiryDate).ifBlank { "Not set" }}",
+                        fontSize = 12.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "Fitness (FC): ${v.fitnessDetails.ifBlank { "Not specified" }} • Expiry: ${formatToDdMmYyyy(v.fitnessExpiryDate).ifBlank { "Not set" }}",
+                        fontSize = 12.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "Pollution (PUC): ${v.pollutionDetails.ifBlank { "Not specified" }} • Expiry: ${formatToDdMmYyyy(v.pollutionExpiryDate).ifBlank { "Not set" }}",
+                        fontSize = 12.sp,
+                        color = TextPrimaryDark
+                      )
+                    }
+                  }
 
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -701,65 +897,91 @@ fun CrmModuleDispatcher(
                   ) {
                     OutlinedButton(
                       onClick = { onEditVehicle(v) },
-                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                      shape = RoundedCornerShape(8.dp)
+                      border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                      shape = RoundedCornerShape(10.dp)
                     ) {
-                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
-                      Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Vehicle & Documents", fontSize = 11.sp)
+                      Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(5.dp))
+                      Text("Edit Vehicle & Documents", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
-                    IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
+                    IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(34.dp)) {
                       Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = KpiRedIcon)
                     }
                   }
                 }
               } else {
-                // Tab 2: Vehicle Maintenance Section (Present Odometer KM, Present Service Date & KM, Next Service Date & KM, Parts Changed)
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Tab 2: Vehicle Maintenance Section (Present Odometer KM, Present Service Date & KM, Next Service Date & KM, Next Service Note)
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                   ) {
-                    Text(
-                      text = "${v.modelName.ifBlank { "Vehicle" }} (${v.registrationNumber.ifBlank { "N/A" }})",
-                      fontWeight = FontWeight.ExtraBold,
-                      fontSize = 16.sp,
-                      color = TextPrimaryDark
-                    )
-                    Text(
-                      text = "Service Cost: ${formatInr(v.maintenanceCost)}",
-                      fontWeight = FontWeight.Bold,
-                      fontSize = 13.sp,
-                      color = KpiOrangeIcon
+                    Row(
+                      modifier = Modifier.weight(1f),
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                      Box(
+                        modifier = Modifier
+                          .size(38.dp)
+                          .clip(RoundedCornerShape(10.dp))
+                          .background(SidebarActiveBlue),
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                      }
+                      Text(
+                        text = "${v.modelName.ifBlank { "Vehicle" }} (${v.registrationNumber.ifBlank { "N/A" }})",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark
+                      )
+                    }
+                    StatusBadge(
+                      text = "Cost: ${formatInr(v.maintenanceCost)}",
+                      bg = KpiOrangeBg,
+                      fg = KpiOrangeIcon
                     )
                   }
 
-                  Text(
-                    text = "Present Odometer KM: ${v.presentRunningKilometers} km",
-                    fontSize = 13.sp,
-                    color = TextPrimaryDark,
-                    fontWeight = FontWeight.Bold
-                  )
-                  Text(
-                    text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
-                    fontSize = 12.sp,
-                    color = SidebarActiveBlue,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
-                    fontSize = 12.sp,
-                    color = KpiGreenIcon,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Next Service Note: ${v.partsChanged.ifBlank { v.serviceNotes }.ifBlank { "Not specified" }}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark,
-                    fontWeight = FontWeight.SemiBold
-                  )
+                  Surface(
+                    color = Color(0xFFECF3FF),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                  ) {
+                    Column(
+                      modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                      verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                      Text(
+                        text = "Present Odometer KM: ${v.presentRunningKilometers} km",
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark,
+                        fontWeight = FontWeight.ExtraBold
+                      )
+                      Text(
+                        text = "Present Service Date: ${formatToDdMmYyyy(v.serviceDate).ifBlank { "Not set" }} • Present Service KM: ${v.serviceKilometers} km",
+                        fontSize = 12.sp,
+                        color = SidebarActiveBlue,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Text(
+                        text = "Next Service Date: ${formatToDdMmYyyy(v.nextServiceDate).ifBlank { "Not set" }} • Next Service Kilometers: ${v.nextServiceKilometers} km",
+                        fontSize = 12.sp,
+                        color = KpiGreenIcon,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Text(
+                        text = "Next Service Note: ${v.partsChanged.ifBlank { v.serviceNotes }.ifBlank { "Not specified" }}",
+                        fontSize = 12.sp,
+                        color = TextPrimaryDark,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                    }
+                  }
 
                   Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -768,15 +990,16 @@ fun CrmModuleDispatcher(
                   ) {
                     OutlinedButton(
                       onClick = { onEditVehicleMaintenance(v) },
-                      contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                      shape = RoundedCornerShape(8.dp)
+                      border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                      shape = RoundedCornerShape(10.dp)
                     ) {
-                      Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
-                      Spacer(modifier = Modifier.width(4.dp))
-                      Text("Edit Vehicle Maintenance", fontSize = 11.sp)
+                      Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                      Spacer(modifier = Modifier.width(5.dp))
+                      Text("Edit Vehicle Maintenance", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
-                    IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(30.dp)) {
+                    IconButton(onClick = { onDeleteVehicle(v.id) }, modifier = Modifier.size(34.dp)) {
                       Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Vehicle", tint = KpiRedIcon)
                     }
                   }
@@ -799,62 +1022,54 @@ fun CrmModuleDispatcher(
       if (drivers.isEmpty()) {
         EmptyModuleCard("No saved drivers yet. Tap 'Add Driver' to add a driver.")
       } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           drivers.forEach { d ->
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Row(
+              Column(
                 modifier = Modifier
                   .fillMaxWidth()
                   .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalArrangement = Arrangement.spacedBy(10.dp)
               ) {
-                Column(
-                  modifier = Modifier.weight(1f),
-                  verticalArrangement = Arrangement.spacedBy(4.dp)
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
                 ) {
-                  Text(
-                    text = "Driver Name: ${d.name.ifBlank { "N/A" }}",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = TextPrimaryDark
-                  )
-                  Text(
-                    text = "Phone: ${d.phone.ifBlank { "N/A" }} • Address: ${d.address.ifBlank { "Not specified" }}",
-                    fontSize = 12.sp,
-                    color = TextSecondarySlate
-                  )
-                  Text(
-                    text = "Driving License No: ${d.licenseNumber.ifBlank { "N/A" }} • Aadhar Card No: ${d.aadharNumber.ifBlank { "Not specified" }}",
-                    fontSize = 12.sp,
-                    color = TextPrimaryDark,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Selfie Photo: ${d.selfiePhotoUri.ifBlank { "Not uploaded" }}",
-                    fontSize = 12.sp,
-                    color = KpiTealIcon,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Uploaded Documents: ${d.documentsUploaded.ifBlank { "No documents uploaded" }}",
-                    fontSize = 12.sp,
-                    color = SidebarActiveBlue
-                  )
-                  if (d.assignedVehicle.isNotBlank()) {
-                    Text(
-                      text = "Assigned Vehicle: ${d.assignedVehicle} (${d.vehicleCategory.ifBlank { "Sedan" }})",
-                      fontSize = 12.sp,
-                      color = TextSecondarySlate
-                    )
+                  Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Box(
+                      modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(SidebarActiveBlue),
+                      contentAlignment = Alignment.Center
+                    ) {
+                      Icon(Icons.Default.Badge, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(
+                        text = d.name.ifBlank { "Unnamed Driver" },
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark
+                      )
+                      Text(
+                        text = "Phone: ${d.phone.ifBlank { "N/A" }} • ${d.address.ifBlank { "Address not set" }}",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
                   }
-                }
-                Column(horizontalAlignment = Alignment.End) {
                   Surface(
                     color = when (d.status) {
                       "Available" -> KpiGreenBg
@@ -873,16 +1088,65 @@ fun CrmModuleDispatcher(
                       },
                       fontSize = 11.sp,
                       fontWeight = FontWeight.Bold,
-                      modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                      modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                   }
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { onEditDriver(d) }) {
-                      Icon(Icons.Default.Edit, contentDescription = "Edit Driver", tint = SidebarActiveBlue)
+                }
+
+                Surface(
+                  color = Color(0xFFECF3FF),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                  ) {
+                    Text(
+                      text = "DL No: ${d.licenseNumber.ifBlank { "N/A" }} • Aadhar: ${d.aadharNumber.ifBlank { "Not specified" }}",
+                      fontSize = 12.sp,
+                      color = TextPrimaryDark,
+                      fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                      text = "Selfie: ${d.selfiePhotoUri.ifBlank { "Not uploaded" }}",
+                      fontSize = 12.sp,
+                      color = KpiTealIcon,
+                      fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                      text = "Documents: ${d.documentsUploaded.ifBlank { "No documents uploaded" }}",
+                      fontSize = 12.sp,
+                      color = SidebarActiveBlue
+                    )
+                    if (d.assignedVehicle.isNotBlank()) {
+                      Text(
+                        text = "Assigned Vehicle: ${d.assignedVehicle} (${d.vehicleCategory.ifBlank { "Sedan" }})",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                      )
                     }
-                    IconButton(onClick = { onDeleteDriver(d.id) }) {
-                      Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Driver", tint = TextSecondarySlate)
-                    }
+                  }
+                }
+
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.End,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  OutlinedButton(
+                    onClick = { onEditDriver(d) },
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
+                  ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text("Edit Driver", fontSize = 12.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
+                  }
+                  Spacer(modifier = Modifier.width(6.dp))
+                  IconButton(onClick = { onDeleteDriver(d.id) }, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Driver", tint = KpiRedIcon)
                   }
                 }
               }
@@ -903,52 +1167,77 @@ fun CrmModuleDispatcher(
       if (bookings.isEmpty()) {
         EmptyModuleCard("No saved trips logged yet.")
       } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           bookings.forEach { b ->
             val netMargin = b.totalAmount - b.expenseAmount - b.gstAmount
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Column(modifier = Modifier.padding(16.dp)) {
+              Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically
                 ) {
-                  Column(modifier = Modifier.weight(1f)) {
-                    Text("${b.pickupLocation} → ${b.dropLocation}", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text(
-                      "Driver: ${b.driverName} • ${b.vehicleNumber} • Distance: ${b.distanceKm} km",
-                      fontSize = 12.sp,
-                      color = TextSecondarySlate
-                    )
+                  Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                  ) {
+                    Box(
+                      modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(SidebarActiveBlue),
+                      contentAlignment = Alignment.Center
+                    ) {
+                      Icon(Icons.Default.DirectionsCar, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text("${b.pickupLocation} → ${b.dropLocation}", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = TextPrimaryDark)
+                      Text(
+                        "Driver: ${b.driverName} • ${b.vehicleNumber} • ${b.distanceKm} km",
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
                   }
+                  Spacer(modifier = Modifier.width(8.dp))
                   OutlinedButton(
                     onClick = { onEditTripExpenses(b) },
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                   ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit Expenses", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Edit Expenses", fontSize = 11.5.sp, color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
                   }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween
+                Surface(
+                  color = Color(0xFFECF3FF),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.fillMaxWidth()
                 ) {
-                  Text("Billed: ${formatInr(b.totalAmount)}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                  Text("Trip Expenses: ${formatInr(b.expenseAmount)}", fontSize = 13.sp, color = KpiOrangeIcon)
-                  Text(
-                    "Net Profit: ${formatInr(netMargin)}",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = KpiGreenIcon
-                  )
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                  ) {
+                    Text("Billed: ${formatInr(b.totalAmount)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimaryDark)
+                    Text("Expenses: ${formatInr(b.expenseAmount)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = KpiOrangeIcon)
+                    Text(
+                      "Net: ${formatInr(netMargin)}",
+                      fontSize = 13.sp,
+                      fontWeight = FontWeight.ExtraBold,
+                      color = KpiGreenIcon
+                    )
+                  }
                 }
               }
             }
@@ -1025,9 +1314,10 @@ fun CrmModuleDispatcher(
 
       // Customer Data Options Card: Show Customers Data View & Download PDF (Stacked Up and Down)
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
         border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier
           .fillMaxWidth()
           .padding(bottom = 12.dp)
@@ -1075,9 +1365,10 @@ fun CrmModuleDispatcher(
 
       if (showInlineCustomersView && mergedCustomers.isNotEmpty()) {
         Card(
-          shape = RoundedCornerShape(14.dp),
-          colors = CardDefaults.cardColors(containerColor = KpiBlueBg.copy(alpha = 0.4f)),
-          border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.4f)),
+          shape = RoundedCornerShape(18.dp),
+          colors = CardDefaults.cardColors(containerColor = Color(0xFFECF3FF)),
+          border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.35f)),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
           modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 12.dp)
@@ -1110,12 +1401,13 @@ fun CrmModuleDispatcher(
       if (mergedCustomers.isEmpty()) {
         EmptyModuleCard("No saved customer records yet. Save a booking or tap 'Add Customer'.")
       } else {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
           mergedCustomers.forEach { c ->
             Card(
-              shape = RoundedCornerShape(14.dp),
+              shape = RoundedCornerShape(18.dp),
               colors = CardDefaults.cardColors(containerColor = CardSurface),
               border = BorderStroke(1.dp, CardBorder),
+              elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
               modifier = Modifier.fillMaxWidth()
             ) {
               Column(
@@ -1124,41 +1416,63 @@ fun CrmModuleDispatcher(
                   .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
               ) {
-                Column(
+                Row(
                   modifier = Modifier.fillMaxWidth(),
-                  verticalArrangement = Arrangement.spacedBy(4.dp)
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                  Text(
-                    text = "Customer Name: ${c.name}",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = TextPrimaryDark
-                  )
-                  if (c.companyName.isNotBlank()) {
+                  Box(
+                    modifier = Modifier
+                      .size(38.dp)
+                      .clip(RoundedCornerShape(10.dp))
+                      .background(SidebarActiveBlue),
+                    contentAlignment = Alignment.Center
+                  ) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                  }
+                  Column(modifier = Modifier.weight(1f)) {
                     Text(
-                      text = "Company Name: ${c.companyName}",
-                      fontSize = 13.sp,
+                      text = c.name,
+                      fontWeight = FontWeight.ExtraBold,
+                      fontSize = 15.5.sp,
+                      color = TextPrimaryDark
+                    )
+                    if (c.companyName.isNotBlank()) {
+                      Text(
+                        text = c.companyName,
+                        fontSize = 12.sp,
+                        color = TextSecondarySlate
+                      )
+                    }
+                  }
+                  StatusBadge(
+                    text = "${c.totalBookings} Trips",
+                    bg = Color(0xFFECF3FF),
+                    fg = SidebarActiveBlue
+                  )
+                }
+
+                Surface(
+                  color = Color(0xFFECF3FF),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                  ) {
+                    Text(
+                      text = "Address: ${c.address.ifBlank { c.companyName.ifBlank { "N/A" } }}",
+                      fontSize = 12.sp,
+                      color = TextSecondarySlate
+                    )
+                    Text(
+                      text = "Mobile Number: ${c.phone.ifBlank { "N/A" }}",
+                      fontSize = 12.5.sp,
                       color = TextPrimaryDark,
-                      fontWeight = FontWeight.Medium
+                      fontWeight = FontWeight.SemiBold
                     )
                   }
-                  Text(
-                    text = "Address: ${c.address.ifBlank { c.companyName.ifBlank { "N/A" } }}",
-                    fontSize = 13.sp,
-                    color = TextSecondarySlate
-                  )
-                  Text(
-                    text = "Mobile Number: ${c.phone.ifBlank { "N/A" }}",
-                    fontSize = 13.sp,
-                    color = TextPrimaryDark,
-                    fontWeight = FontWeight.SemiBold
-                  )
-                  Text(
-                    text = "Total Trips: ${c.totalBookings}",
-                    fontSize = 13.sp,
-                    color = SidebarActiveBlue,
-                    fontWeight = FontWeight.ExtraBold
-                  )
                 }
 
                 @OptIn(ExperimentalLayoutApi::class)
@@ -1171,42 +1485,43 @@ fun CrmModuleDispatcher(
                       activeCustomerForDialog = c
                       showCustomersViewDialog = true
                     },
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, SidebarActiveBlue.copy(alpha = 0.5f)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
                     modifier = Modifier.testTag("view_customer_${c.id}")
                   ) {
                     Icon(Icons.Default.Person, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Customers Data View", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
+                    Text("Customers Data View", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = SidebarActiveBlue)
                   }
                   OutlinedButton(
                     onClick = {
                       activeCustomerForDialog = c
                       showCustomerPdfDialog = true
                     },
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp),
                     border = BorderStroke(1.dp, KpiGreenIcon.copy(alpha = 0.5f)),
                     modifier = Modifier.testTag("pdf_customer_${c.id}")
                   ) {
                     Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = KpiGreenIcon, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Download PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = KpiGreenIcon)
+                    Text("Download PDF", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = KpiGreenIcon)
                   }
                   OutlinedButton(
                     onClick = { onEditCustomer(c) },
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp)
                   ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Edit", fontSize = 11.5.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                   }
                   OutlinedButton(
                     onClick = { onDeleteCustomer(c) },
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(10.dp),
                     border = BorderStroke(1.dp, KpiRedIcon.copy(alpha = 0.5f)),
                     modifier = Modifier.testTag("delete_customer_${c.id}")
                   ) {
@@ -1217,7 +1532,7 @@ fun CrmModuleDispatcher(
                       modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = KpiRedIcon)
+                    Text("Delete", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = KpiRedIcon)
                   }
                 }
               }
@@ -1258,9 +1573,10 @@ fun CrmModuleDispatcher(
         onBackToDashboard = onBackToDashboard
       )
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
         border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier.fillMaxWidth()
       ) {
         Row(
@@ -1272,13 +1588,13 @@ fun CrmModuleDispatcher(
             modifier = Modifier
               .size(40.dp)
               .clip(RoundedCornerShape(10.dp))
-              .background(KpiPurpleBg),
+              .background(SidebarActiveBlue),
             contentAlignment = Alignment.Center
           ) {
-            Icon(Icons.Default.Person, contentDescription = null, tint = KpiPurpleIcon)
+            Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
           }
           Column(modifier = Modifier.weight(1f)) {
-            Text("Administrator", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text("Administrator", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = TextPrimaryDark)
             Text(userEmail.ifBlank { "Signed-In User" }, fontSize = 12.sp, color = SidebarActiveBlue)
             Text("Full Access: Dashboard View, Bookings, Invoices, GST & Fleet", fontSize = 12.sp, color = TextSecondarySlate)
           }
@@ -1323,43 +1639,49 @@ fun CrmModuleDispatcher(
       )
 
       // Vertical Tabs (Up and Down) for Revenue History, Expenses History, Profits History
-      Column(
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
           .fillMaxWidth()
           .padding(bottom = 12.dp)
-          .clip(RoundedCornerShape(12.dp))
-          .background(CardSurface)
-          .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-          .padding(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        val reportTabs = listOf(
-          "1. All Financial History (Revenue, Expenses & Profits)",
-          "2. Revenue History (${formatInr(totalRevenue)})",
-          "3. Expenses History (${formatInr(combinedExpenses)})",
-          "4. Profits History (${formatInr(totalNetProfit)})"
-        )
-        reportTabs.forEachIndexed { idx, tabLabel ->
-          val isSelected = selectedReportTab == idx
-          Surface(
-            color = if (isSelected) SidebarActiveBlue else Color.Transparent,
-            shape = RoundedCornerShape(9.dp),
-            modifier = Modifier
-              .fillMaxWidth()
-              .clip(RoundedCornerShape(9.dp))
-              .clickable { selectedReportTab = idx }
-              .testTag("reports_tab_$idx")
-          ) {
-            Box(
-              modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-              contentAlignment = Alignment.CenterStart
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          val reportTabs = listOf(
+            "1. All Financial History (Revenue, Expenses & Profits)",
+            "2. Revenue History (${formatInr(totalRevenue)})",
+            "3. Expenses History (${formatInr(combinedExpenses)})",
+            "4. Profits History (${formatInr(totalNetProfit)})"
+          )
+          reportTabs.forEachIndexed { idx, tabLabel ->
+            val isSelected = selectedReportTab == idx
+            Surface(
+              color = if (isSelected) SidebarActiveBlue else Color(0xFFECF3FF),
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { selectedReportTab = idx }
+                .testTag("reports_tab_$idx")
             ) {
-              Text(
-                text = tabLabel,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = if (isSelected) Color.White else TextPrimaryDark
-              )
+              Box(
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart
+              ) {
+                Text(
+                  text = tabLabel,
+                  fontSize = 13.sp,
+                  fontWeight = FontWeight.ExtraBold,
+                  color = if (isSelected) Color.White else TextPrimaryDark
+                )
+              }
             }
           }
         }
@@ -1369,13 +1691,28 @@ fun CrmModuleDispatcher(
         // 1. REVENUE HISTORY SECTION
         if (selectedReportTab == 0 || selectedReportTab == 1) {
           Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = CardSurface),
             border = BorderStroke(1.dp, CardBorder),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
             modifier = Modifier.fillMaxWidth()
           ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              Text("Revenue History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(SidebarActiveBlue),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(Icons.Default.BarChart, contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
+                }
+                Text("Revenue History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              }
               HorizontalDivider(color = CardBorder)
               TaxRow("Total Gross Revenue", formatInr(totalRevenue), isBold = true, color = SidebarActiveBlue)
               TaxRow("Realized Paid Revenue", formatInr(realizedRevenue), isBold = true, color = KpiGreenIcon)
@@ -1393,9 +1730,9 @@ fun CrmModuleDispatcher(
                   Row(
                     modifier = Modifier
                       .fillMaxWidth()
-                      .clip(RoundedCornerShape(8.dp))
-                      .background(Color(0xFFF8FAFC))
-                      .padding(10.dp),
+                      .clip(RoundedCornerShape(12.dp))
+                      .background(Color(0xFFECF3FF))
+                      .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                   ) {
@@ -1439,13 +1776,28 @@ fun CrmModuleDispatcher(
         // 2. EXPENSES HISTORY SECTION
         if (selectedReportTab == 0 || selectedReportTab == 2) {
           Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = CardSurface),
             border = BorderStroke(1.dp, CardBorder),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
             modifier = Modifier.fillMaxWidth()
           ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              Text("Expenses History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(KpiOrangeIcon),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(Icons.Default.Payments, contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
+                }
+                Text("Expenses History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              }
               HorizontalDivider(color = CardBorder)
               TaxRow("Total Trip Operating Expenses", formatInr(totalTripExpenses), isBold = true, color = KpiOrangeIcon)
               TaxRow("Total Vehicle Maintenance Expenses", formatInr(totalVehicleMaintenanceExpenses), isBold = true, color = KpiOrangeIcon)
@@ -1459,9 +1811,9 @@ fun CrmModuleDispatcher(
                   Row(
                     modifier = Modifier
                       .fillMaxWidth()
-                      .clip(RoundedCornerShape(8.dp))
-                      .background(Color(0xFFF8FAFC))
-                      .padding(10.dp),
+                      .clip(RoundedCornerShape(12.dp))
+                      .background(Color(0xFFECF3FF))
+                      .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                   ) {
@@ -1487,12 +1839,13 @@ fun CrmModuleDispatcher(
                       )
                       OutlinedButton(
                         onClick = { onEditTripExpenses(b) },
+                        border = BorderStroke(1.dp, Color(0xFFBFD6F6)),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         shape = RoundedCornerShape(8.dp)
                       ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(12.dp))
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = SidebarActiveBlue, modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(3.dp))
-                        Text("Save Expense", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("Save Expense", fontSize = 10.sp, color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                       }
                     }
                   }
@@ -1530,13 +1883,28 @@ fun CrmModuleDispatcher(
         // 3. PROFITS HISTORY SECTION
         if (selectedReportTab == 0 || selectedReportTab == 3) {
           Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = CardSurface),
             border = BorderStroke(1.dp, CardBorder),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
             modifier = Modifier.fillMaxWidth()
           ) {
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-              Text("Profits History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(NewBookingGreen),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(Icons.Default.Payments, contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
+                }
+                Text("Profits History", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
+              }
               HorizontalDivider(color = CardBorder)
               TaxRow("Total Gross Revenue", formatInr(totalRevenue), isBold = true, color = SidebarActiveBlue)
               TaxRow("Less: Combined Expenses (Trips + Maintenance)", formatInr(combinedExpenses), color = KpiOrangeIcon)
@@ -1557,9 +1925,9 @@ fun CrmModuleDispatcher(
                   Row(
                     modifier = Modifier
                       .fillMaxWidth()
-                      .clip(RoundedCornerShape(8.dp))
-                      .background(Color(0xFFF8FAFC))
-                      .padding(10.dp),
+                      .clip(RoundedCornerShape(12.dp))
+                      .background(Color(0xFFECF3FF))
+                      .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                   ) {
@@ -1604,13 +1972,14 @@ fun CrmModuleDispatcher(
 
         // 4. COMBINED EXPORT & SAVE CARD (PDF & CSV)
         Card(
-          shape = RoundedCornerShape(16.dp),
+          shape = RoundedCornerShape(18.dp),
           colors = CardDefaults.cardColors(containerColor = CardSurface),
           border = BorderStroke(1.dp, CardBorder),
+          elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
           modifier = Modifier.fillMaxWidth()
         ) {
           Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Save & Export Complete Financial Statement", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text("Save & Export Complete Financial Statement", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = TextPrimaryDark)
             Text(
               "Saved Bookings: ${bookings.size} | Saved Drivers: ${drivers.size} | Saved Vehicles: ${vehicles.size} | Saved Customers: ${customers.size}",
               fontSize = 13.sp,
@@ -1674,32 +2043,61 @@ fun CrmModuleDispatcher(
 
       CrmModuleSectionHeader(
         title = "System Settings & Tariff Control",
-        subtitle = "Configure agency identity, optional GST slab percentage, and session security.",
+        subtitle = "",
         onBackToDashboard = onBackToDashboard
       )
       Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
         border = BorderStroke(1.dp, CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier.fillMaxWidth()
       ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(SidebarActiveBlue),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.Settings, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
+            Text("Agency & GST Tariff Configuration", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = TextPrimaryDark)
+          }
+          HorizontalDivider(color = CardBorder)
+          val fieldColors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = SidebarActiveBlue,
+            unfocusedBorderColor = Color(0xFFCBD9F3),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color(0xFFF6F9FF)
+          )
           OutlinedTextField(
             value = nameInput,
             onValueChange = { nameInput = it },
             label = { Text("Travel Agency / Company Name") },
+            shape = RoundedCornerShape(12.dp),
+            colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
           )
           OutlinedTextField(
             value = gstinInput,
             onValueChange = { gstinInput = it },
             label = { Text("Company GSTIN") },
+            shape = RoundedCornerShape(12.dp),
+            colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
           )
           OutlinedTextField(
             value = gstSlabInput,
             onValueChange = { gstSlabInput = it.filter { ch -> ch.isDigit() } },
             label = { Text("Optional Passenger Transport GST % (0, 5, 12, or 18)") },
+            shape = RoundedCornerShape(12.dp),
+            colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
           )
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1739,9 +2137,10 @@ private fun EmptyModuleCard(
   message: String,
 ) {
   Card(
-    shape = RoundedCornerShape(16.dp),
+    shape = RoundedCornerShape(18.dp),
     colors = CardDefaults.cardColors(containerColor = CardSurface),
     border = BorderStroke(1.dp, CardBorder),
+    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     modifier = Modifier.fillMaxWidth()
   ) {
     Column(
@@ -1750,13 +2149,21 @@ private fun EmptyModuleCard(
         .padding(24.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Icon(
-        imageVector = Icons.Default.DirectionsCar,
-        contentDescription = null,
-        tint = SidebarActiveBlue,
-        modifier = Modifier.size(36.dp)
-      )
-      Spacer(modifier = Modifier.height(10.dp))
+      Box(
+        modifier = Modifier
+          .size(58.dp)
+          .clip(RoundedCornerShape(14.dp))
+          .background(Color(0xFFECF3FF)),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          imageVector = Icons.Default.DirectionsCar,
+          contentDescription = null,
+          tint = SidebarActiveBlue,
+          modifier = Modifier.size(32.dp)
+        )
+      }
+      Spacer(modifier = Modifier.height(12.dp))
       Text(message, style = MaterialTheme.typography.bodyMedium, color = TextSecondarySlate)
     }
   }

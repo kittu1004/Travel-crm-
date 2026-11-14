@@ -417,7 +417,7 @@ fun RevenueCashflowPerformanceCard(
     shape = RoundedCornerShape(18.dp),
     colors = CardDefaults.cardColors(containerColor = CardSurface),
     border = BorderStroke(1.dp, CardBorder),
-    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
   ) {
     Column(
       modifier = Modifier
@@ -610,9 +610,9 @@ fun RevenueCashflowPerformanceCard(
           label = "GROSS BILLED (${selectedCategory.label.uppercase()})",
           amount = formatInr(grossBilled),
           subtext = "${filteredBookings.size} matching trips",
-          bg = Color(0xFFF8FAFC),
+          bg = Color(0xFFECF3FF),
           border = CardBorder,
-          accent = TextPrimaryDark,
+          accent = Color(0xFF0A66EE),
           modifier = Modifier.weight(1f)
         )
         CashflowSummaryMiniCard(

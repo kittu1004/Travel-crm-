@@ -186,7 +186,7 @@ class CrmViewModel(
   }
 
   fun refreshRevenueMetrics() {
-    _statusBanner.value = "Live realized inflows & GST receivables synchronized with Cloud Firestore."
+    _statusBanner.value = "Live realized inflows & GST receivables refreshed."
   }
 
   fun saveBookingDetails(

@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,12 +42,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -54,7 +56,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.auth.AuthScreen
 import com.example.auth.MobileAuthStore
-import com.example.auth.authStateFlow
 import com.example.auth.signOut
 import com.example.data.Booking
 import com.example.data.CrmRepository
@@ -85,10 +86,6 @@ import com.example.ui.theme.FleetCRMTheme
 import com.example.ui.theme.KpiGreenBg
 import com.example.ui.theme.KpiGreenIcon
 import com.example.ui.theme.SidebarNavy
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -104,7 +101,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
+fun AppNavigation() {
   var isWindowReady by remember { mutableStateOf(false) }
   androidx.compose.runtime.LaunchedEffect(Unit) {
     androidx.compose.runtime.withFrameNanos { }
@@ -121,21 +118,22 @@ fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
   }
 
   val context = LocalContext.current
-  val currentUser by auth.authStateFlow().collectAsStateWithLifecycle(initialValue = auth.currentUser)
-  val user = currentUser
   var isMobileLoggedIn by remember { mutableStateOf(MobileAuthStore.isLoggedIn(context)) }
+  var activeMobile by remember { mutableStateOf(MobileAuthStore.getLastMobile(context)) }
 
-  if (user == null || !isMobileLoggedIn) {
+  if (!isMobileLoggedIn || activeMobile.isBlank()) {
     AuthScreen(
       onAuthSuccess = {
+        activeMobile = MobileAuthStore.getLastMobile(context)
         isMobileLoggedIn = MobileAuthStore.isLoggedIn(context)
       }
     )
   } else {
-    key(user.uid) {
+    val userId = "mobile_$activeMobile"
+    key(userId) {
       FleetCrmCommandCenterScreen(
-        currentUserId = user.uid,
-        userEmail = user.email ?: "admin@fleetcrm.in",
+        currentUserId = userId,
+        userEmail = "+91 $activeMobile",
         onSignedOut = { isMobileLoggedIn = false }
       )
     }
@@ -155,9 +153,7 @@ fun FleetCrmCommandCenterScreen(
         val app = checkNotNull(this[APPLICATION_KEY]) {
           "APPLICATION_KEY missing from CreationExtras"
         }
-        val databaseId = app.getString(R.string.firestore_database_id)
-        val db = FirebaseFirestore.getInstance(databaseId)
-        CrmViewModel(CrmRepository(db), currentUserId)
+        CrmViewModel(CrmRepository(app, currentUserId), currentUserId)
       }
     }
   )
@@ -235,7 +231,7 @@ fun FleetCrmCommandCenterScreen(
       gesturesEnabled = !showPermanentSidebar,
       drawerContent = {
         ModalDrawerSheet(
-          drawerContainerColor = SidebarNavy,
+          drawerContainerColor = Color(0xFF091B5E),
           modifier = Modifier.width(250.dp)
         ) {
           CrmDarkSidebar(
@@ -262,13 +258,130 @@ fun FleetCrmCommandCenterScreen(
           )
         }
 
-        Column(
+        Box(
           modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .background(
+              Brush.verticalGradient(
+                colors = listOf(
+                  Color(0xFFF3F6FF),
+                  Color(0xFFEAF1FF),
+                  Color(0xFFF3EEFF)
+                )
+              )
+            )
         ) {
+          // Flowing top wave header (for History & Module views) + bottom decorative waves
+          Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            if (selectedSection != CrmSection.DASHBOARD) {
+              val headerH = 158.dp.toPx()
+              val topWave = Path().apply {
+                moveTo(0f, 0f)
+                lineTo(w, 0f)
+                lineTo(w, headerH * 0.88f)
+                cubicTo(
+                  w * 0.72f, headerH * 1.12f,
+                  w * 0.28f, headerH * 0.76f,
+                  0f, headerH * 0.96f
+                )
+                close()
+              }
+              drawPath(
+                path = topWave,
+                brush = Brush.horizontalGradient(
+                  colors = listOf(
+                    Color(0xFF0A1D66),
+                    Color(0xFF0058DF),
+                    Color(0xFF0B8CF5),
+                    Color(0xFF7C3AED),
+                    Color(0xFFA855F7)
+                  )
+                )
+              )
+
+              val topGlowWave = Path().apply {
+                moveTo(0f, headerH * 0.26f)
+                cubicTo(
+                  w * 0.34f, headerH * 0.62f,
+                  w * 0.68f, headerH * 0.05f,
+                  w, headerH * 0.36f
+                )
+                lineTo(w, headerH * 0.88f)
+                cubicTo(
+                  w * 0.72f, headerH * 1.12f,
+                  w * 0.28f, headerH * 0.76f,
+                  0f, headerH * 0.96f
+                )
+                close()
+              }
+              drawPath(
+                path = topGlowWave,
+                brush = Brush.horizontalGradient(
+                  colors = listOf(
+                    Color(0xFF38BDF8).copy(alpha = 0.22f),
+                    Color(0xFF60A5FA).copy(alpha = 0.14f),
+                    Color(0xFFC084FC).copy(alpha = 0.28f)
+                  )
+                )
+              )
+            }
+
+            // Bottom subtle cyan-blue-violet wave curves matching reference screens
+            val bottomWaveBack = Path().apply {
+              moveTo(0f, h - 88.dp.toPx())
+              cubicTo(
+                w * 0.32f, h - 120.dp.toPx(),
+                w * 0.66f, h - 42.dp.toPx(),
+                w, h - 94.dp.toPx()
+              )
+              lineTo(w, h)
+              lineTo(0f, h)
+              close()
+            }
+            drawPath(
+              path = bottomWaveBack,
+              brush = Brush.horizontalGradient(
+                colors = listOf(
+                  Color(0xFF38BDF8).copy(alpha = 0.26f),
+                  Color(0xFF6366F1).copy(alpha = 0.22f),
+                  Color(0xFFA855F7).copy(alpha = 0.30f)
+                )
+              )
+            )
+
+            val bottomWaveFront = Path().apply {
+              moveTo(0f, h - 46.dp.toPx())
+              cubicTo(
+                w * 0.38f, h - 16.dp.toPx(),
+                w * 0.70f, h - 86.dp.toPx(),
+                w, h - 54.dp.toPx()
+              )
+              lineTo(w, h)
+              lineTo(0f, h)
+              close()
+            }
+            drawPath(
+              path = bottomWaveFront,
+              brush = Brush.horizontalGradient(
+                colors = listOf(
+                  Color(0xFF0EA5E9).copy(alpha = 0.30f),
+                  Color(0xFF7C3AED).copy(alpha = 0.32f),
+                  Color(0xFFC084FC).copy(alpha = 0.34f)
+                )
+              )
+            )
+          }
+
+          Column(
+            modifier = Modifier
+              .fillMaxSize()
+              .verticalScroll(rememberScrollState())
+              .padding(horizontal = 16.dp, vertical = 14.dp)
+          ) {
           CommandCenterHeader(
             isCompactScreen = !isWideScreen,
             isBusy = isActionBusy,
@@ -390,9 +503,9 @@ fun FleetCrmCommandCenterScreen(
               onSaveSettings = { a, g, s -> viewModel.updateSystemSettings(a, g, s) },
               onLoadDemoData = { viewModel.loadLiveDemoData() },
               onSignOut = {
-                val credentialManager = CredentialManager.create(context)
-                onSignedOut()
-                signOut(context = context, credentialManager = credentialManager, scope = scope)
+                signOut(context = context) {
+                  onSignedOut()
+                }
               },
               onEditBooking = { booking ->
                 editingBooking = booking
@@ -441,7 +554,8 @@ fun FleetCrmCommandCenterScreen(
             )
           }
 
-          Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+          }
         }
       }
     }

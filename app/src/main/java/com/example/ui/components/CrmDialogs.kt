@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -74,7 +75,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -150,7 +154,7 @@ fun CrmFormModalShell(
   ) {
     Surface(
       shape = RoundedCornerShape(22.dp),
-      color = CanvasBackground,
+      color = Color(0xFFEFF4FF),
       tonalElevation = 8.dp,
       shadowElevation = 18.dp,
       border = BorderStroke(1.dp, CardBorder),
@@ -160,111 +164,208 @@ fun CrmFormModalShell(
         .heightIn(max = 760.dp)
     ) {
       Column(modifier = Modifier.fillMaxWidth()) {
-        // Dark Modal Header
-        Column(
+        // Vibrant Navy-to-Royal-Blue & Cyan-Purple Wave Modal Header matching Screenshot 2
+        Box(
           modifier = Modifier
             .fillMaxWidth()
-            .background(SidebarNavy)
-            .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Surface(
-              color = badgeBg.copy(alpha = 0.18f),
-              shape = RoundedCornerShape(6.dp),
-              border = BorderStroke(1.dp, badgeFg.copy(alpha = 0.45f))
-            ) {
-              Text(
-                text = badgeText,
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.7.sp,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            .background(
+              Brush.horizontalGradient(
+                colors = listOf(
+                  Color(0xFF0A1D66),
+                  Color(0xFF0052D4),
+                  Color(0xFF0B8CF5),
+                  Color(0xFF7C3AED)
+                )
               )
+            )
+        ) {
+          Canvas(modifier = Modifier.matchParentSize()) {
+            val w = size.width
+            val h = size.height
+            val headerWave = Path().apply {
+              moveTo(0f, h * 0.58f)
+              cubicTo(w * 0.34f, h * 0.92f, w * 0.68f, h * 0.25f, w, h * 0.52f)
+              lineTo(w, h)
+              lineTo(0f, h)
+              close()
+            }
+            drawPath(
+              path = headerWave,
+              brush = Brush.horizontalGradient(
+                colors = listOf(
+                  Color(0xFF38BDF8).copy(alpha = 0.24f),
+                  Color(0xFF60A5FA).copy(alpha = 0.16f),
+                  Color(0xFFC084FC).copy(alpha = 0.32f)
+                )
+              )
+            )
+          }
+
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 20.dp, vertical = 16.dp)
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Surface(
+                color = Color(0xFF0B4CC9).copy(alpha = 0.72f),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f))
+              ) {
+                Text(
+                  text = badgeText,
+                  color = Color.White,
+                  fontSize = 10.sp,
+                  fontWeight = FontWeight.ExtraBold,
+                  letterSpacing = 0.7.sp,
+                  modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+              }
+
+              IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                  .size(32.dp)
+                  .clip(CircleShape)
+                  .background(Color.White.copy(alpha = 0.18f))
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "Close Modal",
+                  tint = Color.White,
+                  modifier = Modifier.size(16.dp)
+                )
+              }
             }
 
-            IconButton(
-              onClick = onDismiss,
-              modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
             ) {
+              Text(
+                text = title,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.weight(1f)
+              )
               Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Modal",
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
+                imageVector = Icons.Default.DirectionsCar,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.32f),
+                modifier = Modifier.size(34.dp)
               )
             }
           }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = title,
-            color = Color.White,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.ExtraBold
-          )
         }
 
-        // Scrollable Structured Form Content (Vertical Up-and-Down Layout)
-        Column(
+        // Scrollable Structured Form Content on soft lavender-blue wave canvas
+        Box(
           modifier = Modifier
             .weight(1f, fill = false)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-          verticalArrangement = Arrangement.spacedBy(14.dp)
+            .fillMaxWidth()
+            .background(
+              Brush.verticalGradient(
+                colors = listOf(
+                  Color(0xFFEEF3FF),
+                  Color(0xFFE7EFFD),
+                  Color(0xFFF3EEFF)
+                )
+              )
+            )
         ) {
-          content()
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .verticalScroll(rememberScrollState())
+              .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+          ) {
+            content()
+          }
         }
 
         HorizontalDivider(color = CardBorder)
 
-        // Sticky Action Footer (Vertical Up-and-Down Buttons)
-        Column(
+        // Sticky Action Footer with soft bottom wave tint
+        Box(
           modifier = Modifier
             .fillMaxWidth()
-            .background(CardSurface)
-            .padding(horizontal = 18.dp, vertical = 12.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp)
+            .background(
+              Brush.verticalGradient(
+                colors = listOf(
+                  Color(0xFFF8FAFF),
+                  Color(0xFFEDF2FF)
+                )
+              )
+            )
         ) {
-          Button(
-            onClick = onConfirm,
-            colors = ButtonDefaults.buttonColors(containerColor = primaryButtonColor),
-            shape = RoundedCornerShape(10.dp),
-            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+          Column(
             modifier = Modifier
               .fillMaxWidth()
-              .testTag("modal_confirm_submit_button")
+              .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
           ) {
-            Text(primaryButtonText, fontWeight = FontWeight.ExtraBold, color = Color.White)
-          }
+            Button(
+              onClick = onConfirm,
+              colors = ButtonDefaults.buttonColors(containerColor = primaryButtonColor),
+              shape = RoundedCornerShape(12.dp),
+              contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .testTag("modal_confirm_submit_button")
+            ) {
+              Text(primaryButtonText, fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 14.sp)
+            }
 
-          OutlinedButton(
-            onClick = onDismiss,
-            shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.dp, CardBorder),
-            modifier = Modifier.fillMaxWidth()
-          ) {
-            Text("Cancel", color = TextPrimaryDark, fontWeight = FontWeight.SemiBold)
-          }
-
-          if (onClearFields != null) {
-            TextButton(
-              onClick = onClearFields,
+            OutlinedButton(
+              onClick = onDismiss,
+              shape = RoundedCornerShape(12.dp),
+              border = BorderStroke(1.dp, Color(0xFFC2D4F2)),
+              colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
               modifier = Modifier.fillMaxWidth()
             ) {
-              Text("Clear Form", color = TextSecondarySlate, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+              Text("Cancel", color = TextPrimaryDark, fontWeight = FontWeight.Bold)
+            }
+
+            if (onClearFields != null) {
+              TextButton(
+                onClick = onClearFields,
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text("Clear Form", color = SidebarActiveBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+              }
             }
           }
         }
       }
     }
+  }
+}
+
+private fun sectionHeaderGradient(accentColor: Color): Brush {
+  return when (accentColor) {
+    KpiPurpleIcon -> Brush.horizontalGradient(
+      colors = listOf(Color(0xFF5B21B6), Color(0xFF7C3AED), Color(0xFFA855F7))
+    )
+    KpiTealIcon -> Brush.horizontalGradient(
+      colors = listOf(Color(0xFF0F766E), Color(0xFF0891B2), Color(0xFF06B6D4))
+    )
+    NewBookingGreen, KpiGreenIcon -> Brush.horizontalGradient(
+      colors = listOf(Color(0xFF15803D), Color(0xFF16A34A), Color(0xFF22C55E))
+    )
+    KpiOrangeIcon -> Brush.horizontalGradient(
+      colors = listOf(Color(0xFFC2410C), Color(0xFFEA580C), Color(0xFFF59E0B))
+    )
+    else -> Brush.horizontalGradient(
+      colors = listOf(Color(0xFF0048C4), Color(0xFF0066EE), Color(0xFF2585FF))
+    )
   }
 }
 
@@ -278,36 +379,55 @@ private fun FormSectionCard(
   Column(
     modifier = Modifier
       .fillMaxWidth()
-      .clip(RoundedCornerShape(14.dp))
+      .clip(RoundedCornerShape(16.dp))
       .background(CardSurface)
-      .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
-      .padding(14.dp),
-    verticalArrangement = Arrangement.spacedBy(10.dp)
+      .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
   ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Box(
-        modifier = Modifier
-          .size(22.dp)
-          .clip(RoundedCornerShape(6.dp))
-          .background(accentColor.copy(alpha = 0.14f)),
-        contentAlignment = Alignment.Center
+    // Full-width colorful gradient header banner matching Screenshot 2
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .background(sectionHeaderGradient(accentColor))
+        .padding(horizontal = 14.dp, vertical = 10.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.weight(1f)
       ) {
+        Box(
+          modifier = Modifier
+            .size(24.dp)
+            .clip(RoundedCornerShape(7.dp))
+            .background(Color.White),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = stepNumber,
+            color = accentColor,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.ExtraBold
+          )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
         Text(
-          text = stepNumber,
-          color = accentColor,
-          fontSize = 11.sp,
-          fontWeight = FontWeight.ExtraBold
+          text = sectionTitle,
+          fontSize = 13.5.sp,
+          fontWeight = FontWeight.ExtraBold,
+          color = Color.White
         )
       }
-      Spacer(modifier = Modifier.width(8.dp))
-      Text(
-        text = sectionTitle,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.ExtraBold,
-        color = TextPrimaryDark
-      )
     }
-    content()
+
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(14.dp),
+      verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+      content()
+    }
   }
 }
 
@@ -345,12 +465,12 @@ private fun FormFieldInput(
     keyboardOptions = KeyboardOptions(
       keyboardType = if (isNumeric) KeyboardType.Number else KeyboardType.Text
     ),
-    shape = RoundedCornerShape(10.dp),
+    shape = RoundedCornerShape(12.dp),
     colors = OutlinedTextFieldDefaults.colors(
       focusedBorderColor = SidebarActiveBlue,
-      unfocusedBorderColor = CardBorder,
+      unfocusedBorderColor = Color(0xFFCBD9F3),
       focusedContainerColor = Color.White,
-      unfocusedContainerColor = CanvasBackground.copy(alpha = 0.5f)
+      unfocusedContainerColor = Color(0xFFF6F9FF)
     ),
     modifier = modifier
   )
@@ -391,12 +511,12 @@ private fun FormSelectDropdown(
       trailingIcon = {
         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
       },
-      shape = RoundedCornerShape(10.dp),
+      shape = RoundedCornerShape(12.dp),
       colors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = SidebarActiveBlue,
-        unfocusedBorderColor = CardBorder,
+        unfocusedBorderColor = Color(0xFFCBD9F3),
         focusedContainerColor = Color.White,
-        unfocusedContainerColor = CanvasBackground.copy(alpha = 0.5f)
+        unfocusedContainerColor = Color(0xFFF6F9FF)
       ),
       modifier = Modifier
         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -459,12 +579,12 @@ private fun FormCalendarDateField(
         }
       },
       singleLine = true,
-      shape = RoundedCornerShape(10.dp),
+      shape = RoundedCornerShape(12.dp),
       colors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = SidebarActiveBlue,
-        unfocusedBorderColor = CardBorder,
+        unfocusedBorderColor = Color(0xFFCBD9F3),
         focusedContainerColor = Color.White,
-        unfocusedContainerColor = CanvasBackground.copy(alpha = 0.5f)
+        unfocusedContainerColor = Color(0xFFF6F9FF)
       ),
       modifier = Modifier
         .fillMaxWidth()

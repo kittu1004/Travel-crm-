@@ -2,6 +2,10 @@ package com.example.data
 
 import android.content.Context
 import com.example.R
+import com.example.data.local.CrmDao
+import com.example.data.local.CrmDatabase
+import com.example.data.local.toDomain
+import com.example.data.local.toEntity
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.auth
@@ -10,17 +14,33 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.snapshots
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
-class CrmRepository(private val db: FirebaseFirestore) {
+class CrmRepository private constructor(
+  private val db: FirebaseFirestore?,
+  private val dao: CrmDao?,
+  private val activeUserId: String?,
+) {
+
+  constructor(db: FirebaseFirestore) : this(db = db, dao = null, activeUserId = null)
+
+  constructor(dao: CrmDao, userId: String) : this(db = null, dao = dao, activeUserId = userId)
+
+  constructor(context: Context, userId: String) : this(
+    db = null,
+    dao = CrmDatabase.getInstance(context).crmDao(),
+    activeUserId = userId,
+  )
 
   constructor(context: Context) : this(
     FirebaseFirestore.getInstance(
@@ -28,19 +48,32 @@ class CrmRepository(private val db: FirebaseFirestore) {
     )
   )
 
-  private val auth = Firebase.auth
+  private val auth by lazy { Firebase.auth }
 
   private fun requireUserId(): String {
+    if (dao != null) {
+      return activeUserId?.takeIf { it.isNotBlank() }
+        ?: throw IllegalStateException("User must be signed in with a mobile number.")
+    }
     return auth.currentUser?.uid
-      ?: throw IllegalStateException("User must be signed in with Google before accessing Firestore.")
+      ?: throw IllegalStateException("User must be signed in before accessing database.")
   }
 
   // --- REALTIME OBSERVATION FLOWS (ONLY USER-SAVED DATA, NO DEFAULT DATA) ---
 
   fun observeBookings(userId: String = requireUserId()): Flow<List<Booking>> = flow {
+    if (dao != null) {
+      emitAll(
+        dao.observeBookings(userId).map { rows ->
+          rows.map { it.toDomain() }.filterNot { isSeededOrDefaultBooking(it) }
+        }
+      )
+      return@flow
+    }
+    val firestore = checkNotNull(db)
     val path = "users/$userId/bookings"
     emitAll(
-      db.collection("users").document(userId).collection("bookings")
+      firestore.collection("users").document(userId).collection("bookings")
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Booking::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
@@ -55,9 +88,18 @@ class CrmRepository(private val db: FirebaseFirestore) {
   }.flowOn(Dispatchers.Default)
 
   fun observeDrivers(userId: String = requireUserId()): Flow<List<Driver>> = flow {
+    if (dao != null) {
+      emitAll(
+        dao.observeDrivers(userId).map { rows ->
+          rows.map { it.toDomain() }.filterNot { isSeededOrDefaultDriver(it) }
+        }
+      )
+      return@flow
+    }
+    val firestore = checkNotNull(db)
     val path = "users/$userId/drivers"
     emitAll(
-      db.collection("users").document(userId).collection("drivers")
+      firestore.collection("users").document(userId).collection("drivers")
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Driver::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
@@ -72,9 +114,18 @@ class CrmRepository(private val db: FirebaseFirestore) {
   }.flowOn(Dispatchers.Default)
 
   fun observeVehicles(userId: String = requireUserId()): Flow<List<Vehicle>> = flow {
+    if (dao != null) {
+      emitAll(
+        dao.observeVehicles(userId).map { rows ->
+          rows.map { it.toDomain() }.filterNot { isSeededOrDefaultVehicle(it) }
+        }
+      )
+      return@flow
+    }
+    val firestore = checkNotNull(db)
     val path = "users/$userId/vehicles"
     emitAll(
-      db.collection("users").document(userId).collection("vehicles")
+      firestore.collection("users").document(userId).collection("vehicles")
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Vehicle::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
@@ -89,9 +140,18 @@ class CrmRepository(private val db: FirebaseFirestore) {
   }.flowOn(Dispatchers.Default)
 
   fun observeLeads(userId: String = requireUserId()): Flow<List<Lead>> = flow {
+    if (dao != null) {
+      emitAll(
+        dao.observeLeads(userId).map { rows ->
+          rows.map { it.toDomain() }.filterNot { isSeededOrDefaultLead(it) }
+        }
+      )
+      return@flow
+    }
+    val firestore = checkNotNull(db)
     val path = "users/$userId/leads"
     emitAll(
-      db.collection("users").document(userId).collection("leads")
+      firestore.collection("users").document(userId).collection("leads")
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Lead::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
@@ -106,9 +166,18 @@ class CrmRepository(private val db: FirebaseFirestore) {
   }.flowOn(Dispatchers.Default)
 
   fun observeCustomers(userId: String = requireUserId()): Flow<List<Customer>> = flow {
+    if (dao != null) {
+      emitAll(
+        dao.observeCustomers(userId).map { rows ->
+          rows.map { it.toDomain() }.filterNot { isSeededOrDefaultCustomer(it) }
+        }
+      )
+      return@flow
+    }
+    val firestore = checkNotNull(db)
     val path = "users/$userId/customers"
     emitAll(
-      db.collection("users").document(userId).collection("customers")
+      firestore.collection("users").document(userId).collection("customers")
         .snapshots()
         .map { snapshot ->
           snapshot.toObjects(Customer::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
@@ -137,7 +206,14 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun addBooking(booking: Booking): Result<String> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("bookings").document()
+    if (dao != null) {
+      val id = booking.id.ifBlank { UUID.randomUUID().toString() }
+      val now = System.currentTimeMillis()
+      dao.upsertBooking(booking.toEntity(id, uid, now, now))
+      return@runCatching id
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("bookings").document()
     val payload = mapOf(
       "userId" to uid,
       "customerName" to booking.customerName.trim(),
@@ -176,7 +252,11 @@ class CrmRepository(private val db: FirebaseFirestore) {
   }
 
   suspend fun getBookingById(ownerUid: String, bookingId: String): Result<Booking?> = runCatching {
-    val docRef = db.collection("users").document(ownerUid).collection("bookings").document(bookingId)
+    if (dao != null) {
+      return@runCatching dao.getBookingById(ownerUid, bookingId)?.toDomain()
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(ownerUid).collection("bookings").document(bookingId)
     try {
       docRef.get().await().toObject(Booking::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
     } catch (e: CancellationException) {
@@ -190,8 +270,15 @@ class CrmRepository(private val db: FirebaseFirestore) {
   suspend fun updateBooking(booking: Booking): Result<Unit> = runCatching {
     val uid = requireUserId()
     require(booking.id.isNotBlank()) { "Booking ID must not be blank" }
+    if (dao != null) {
+      val createdMillis = booking.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+      val updatedMillis = System.currentTimeMillis()
+      dao.upsertBooking(booking.toEntity(booking.id, uid, createdMillis, updatedMillis))
+      return@runCatching
+    }
     requireNotNull(booking.createdAt) { "Booking createdAt must not be null" }
-    val docRef = db.collection("users").document(uid).collection("bookings").document(booking.id)
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("bookings").document(booking.id)
     try {
       docRef.set(booking.copy(userId = uid, updatedAt = null)).await()
     } catch (e: CancellationException) {
@@ -204,7 +291,12 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun deleteBooking(bookingId: String): Result<Unit> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("bookings").document(bookingId)
+    if (dao != null) {
+      dao.deleteBooking(uid, bookingId)
+      return@runCatching
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("bookings").document(bookingId)
     try {
       docRef.delete().await()
     } catch (e: CancellationException) {
@@ -219,7 +311,14 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun addDriver(driver: Driver): Result<String> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("drivers").document()
+    if (dao != null) {
+      val id = driver.id.ifBlank { UUID.randomUUID().toString() }
+      val now = System.currentTimeMillis()
+      dao.upsertDriver(driver.toEntity(id, uid, now, now))
+      return@runCatching id
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("drivers").document()
     val payload = mapOf(
       "userId" to uid,
       "name" to driver.name.trim(),
@@ -251,8 +350,15 @@ class CrmRepository(private val db: FirebaseFirestore) {
   suspend fun updateDriver(driver: Driver): Result<Unit> = runCatching {
     val uid = requireUserId()
     require(driver.id.isNotBlank()) { "Driver ID must not be blank" }
+    if (dao != null) {
+      val createdMillis = driver.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+      val updatedMillis = System.currentTimeMillis()
+      dao.upsertDriver(driver.toEntity(driver.id, uid, createdMillis, updatedMillis))
+      return@runCatching
+    }
     requireNotNull(driver.createdAt) { "Driver createdAt must not be null" }
-    val docRef = db.collection("users").document(uid).collection("drivers").document(driver.id)
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("drivers").document(driver.id)
     try {
       docRef.set(driver.copy(userId = uid, updatedAt = null)).await()
     } catch (e: CancellationException) {
@@ -265,7 +371,12 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun deleteDriver(driverId: String): Result<Unit> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("drivers").document(driverId)
+    if (dao != null) {
+      dao.deleteDriver(uid, driverId)
+      return@runCatching
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("drivers").document(driverId)
     try {
       docRef.delete().await()
     } catch (e: CancellationException) {
@@ -280,7 +391,14 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun addVehicle(vehicle: Vehicle): Result<String> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("vehicles").document()
+    if (dao != null) {
+      val id = vehicle.id.ifBlank { UUID.randomUUID().toString() }
+      val now = System.currentTimeMillis()
+      dao.upsertVehicle(vehicle.toEntity(id, uid, now, now))
+      return@runCatching id
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("vehicles").document()
     val payload = mapOf(
       "userId" to uid,
       "registrationNumber" to vehicle.registrationNumber.trim(),
@@ -319,8 +437,15 @@ class CrmRepository(private val db: FirebaseFirestore) {
   suspend fun updateVehicle(vehicle: Vehicle): Result<Unit> = runCatching {
     val uid = requireUserId()
     require(vehicle.id.isNotBlank()) { "Vehicle ID must not be blank" }
+    if (dao != null) {
+      val createdMillis = vehicle.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+      val updatedMillis = System.currentTimeMillis()
+      dao.upsertVehicle(vehicle.toEntity(vehicle.id, uid, createdMillis, updatedMillis))
+      return@runCatching
+    }
     requireNotNull(vehicle.createdAt) { "Vehicle createdAt must not be null" }
-    val docRef = db.collection("users").document(uid).collection("vehicles").document(vehicle.id)
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("vehicles").document(vehicle.id)
     try {
       docRef.set(vehicle.copy(userId = uid, updatedAt = null)).await()
     } catch (e: CancellationException) {
@@ -333,7 +458,12 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun deleteVehicle(vehicleId: String): Result<Unit> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("vehicles").document(vehicleId)
+    if (dao != null) {
+      dao.deleteVehicle(uid, vehicleId)
+      return@runCatching
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("vehicles").document(vehicleId)
     try {
       docRef.delete().await()
     } catch (e: CancellationException) {
@@ -348,7 +478,14 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun addLead(lead: Lead): Result<String> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("leads").document()
+    if (dao != null) {
+      val id = lead.id.ifBlank { UUID.randomUUID().toString() }
+      val now = System.currentTimeMillis()
+      dao.upsertLead(lead.toEntity(id, uid, now, now))
+      return@runCatching id
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("leads").document()
     val payload = mapOf(
       "userId" to uid,
       "clientName" to lead.clientName.trim(),
@@ -375,8 +512,15 @@ class CrmRepository(private val db: FirebaseFirestore) {
   suspend fun updateLead(lead: Lead): Result<Unit> = runCatching {
     val uid = requireUserId()
     require(lead.id.isNotBlank()) { "Lead ID must not be blank" }
+    if (dao != null) {
+      val createdMillis = lead.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+      val updatedMillis = System.currentTimeMillis()
+      dao.upsertLead(lead.toEntity(lead.id, uid, createdMillis, updatedMillis))
+      return@runCatching
+    }
     requireNotNull(lead.createdAt) { "Lead createdAt must not be null" }
-    val docRef = db.collection("users").document(uid).collection("leads").document(lead.id)
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("leads").document(lead.id)
     try {
       docRef.set(lead.copy(userId = uid, updatedAt = null)).await()
     } catch (e: CancellationException) {
@@ -389,7 +533,12 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun deleteLead(leadId: String): Result<Unit> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("leads").document(leadId)
+    if (dao != null) {
+      dao.deleteLead(uid, leadId)
+      return@runCatching
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("leads").document(leadId)
     try {
       docRef.delete().await()
     } catch (e: CancellationException) {
@@ -404,7 +553,14 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun addCustomer(customer: Customer): Result<String> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("customers").document()
+    if (dao != null) {
+      val id = customer.id.ifBlank { UUID.randomUUID().toString() }
+      val now = System.currentTimeMillis()
+      dao.upsertCustomer(customer.toEntity(id, uid, now, now))
+      return@runCatching id
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("customers").document()
     val payload = mapOf(
       "userId" to uid,
       "name" to customer.name.trim(),
@@ -433,8 +589,15 @@ class CrmRepository(private val db: FirebaseFirestore) {
   suspend fun updateCustomer(customer: Customer): Result<Unit> = runCatching {
     val uid = requireUserId()
     require(customer.id.isNotBlank()) { "Customer ID must not be blank" }
+    if (dao != null) {
+      val createdMillis = customer.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+      val updatedMillis = System.currentTimeMillis()
+      dao.upsertCustomer(customer.toEntity(customer.id, uid, createdMillis, updatedMillis))
+      return@runCatching
+    }
     requireNotNull(customer.createdAt) { "Customer createdAt must not be null" }
-    val docRef = db.collection("users").document(uid).collection("customers").document(customer.id)
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("customers").document(customer.id)
     try {
       docRef.set(customer.copy(userId = uid, updatedAt = null)).await()
     } catch (e: CancellationException) {
@@ -447,7 +610,12 @@ class CrmRepository(private val db: FirebaseFirestore) {
 
   suspend fun deleteCustomer(customerId: String): Result<Unit> = runCatching {
     val uid = requireUserId()
-    val docRef = db.collection("users").document(uid).collection("customers").document(customerId)
+    if (dao != null) {
+      dao.deleteCustomer(uid, customerId)
+      return@runCatching
+    }
+    val firestore = checkNotNull(db)
+    val docRef = firestore.collection("users").document(uid).collection("customers").document(customerId)
     try {
       docRef.delete().await()
     } catch (e: CancellationException) {
@@ -520,12 +688,37 @@ class CrmRepository(private val db: FirebaseFirestore) {
   }
 
   /**
-   * Automatically removes any previously seeded default/sample documents from Firestore
+   * Automatically removes any previously seeded default/sample records
    * so only genuine user-saved records remain in the database.
    */
   suspend fun purgeLegacyDefaultData(userId: String = requireUserId()) {
     runCatching {
-      val userDoc = db.collection("users").document(userId)
+      if (dao != null) {
+        dao.observeDrivers(userId).first()
+          .map { it.toDomain() }
+          .filter { isSeededOrDefaultDriver(it) }
+          .forEach { dao.deleteDriver(userId, it.id) }
+        dao.observeCustomers(userId).first()
+          .map { it.toDomain() }
+          .filter { isSeededOrDefaultCustomer(it) }
+          .forEach { dao.deleteCustomer(userId, it.id) }
+        dao.observeVehicles(userId).first()
+          .map { it.toDomain() }
+          .filter { isSeededOrDefaultVehicle(it) }
+          .forEach { dao.deleteVehicle(userId, it.id) }
+        dao.observeLeads(userId).first()
+          .map { it.toDomain() }
+          .filter { isSeededOrDefaultLead(it) }
+          .forEach { dao.deleteLead(userId, it.id) }
+        dao.observeBookings(userId).first()
+          .map { it.toDomain() }
+          .filter { isSeededOrDefaultBooking(it) }
+          .forEach { dao.deleteBooking(userId, it.id) }
+        return@runCatching
+      }
+
+      val firestore = checkNotNull(db)
+      val userDoc = firestore.collection("users").document(userId)
 
       val driversSnap = userDoc.collection("drivers").get().await()
       for (doc in driversSnap.documents) {

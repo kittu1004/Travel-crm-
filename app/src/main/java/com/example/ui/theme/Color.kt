@@ -5,16 +5,16 @@ import androidx.compose.ui.graphics.Color
 // Sidebar & Brand Colors matching reference UI
 val SidebarNavy = Color(0xFF0B1120)
 val SidebarItemHover = Color(0xFF1E293B)
-val SidebarActiveBlue = Color(0xFF2563EB)
+val SidebarActiveBlue = Color(0xFF0A66EE)
 val SidebarTextMuted = Color(0xFF94A3B8)
 val SidebarTextPrimary = Color(0xFFF8FAFC)
 val DriverBadgePurple = Color(0xFF5B21B6)
 val DriverBadgeText = Color(0xFFDDD6FE)
 
 // Main Command Center Canvas & Cards
-val CanvasBackground = Color(0xFFF4F6FA)
+val CanvasBackground = Color(0xFFEEF3FF)
 val CardSurface = Color(0xFFFFFFFF)
-val CardBorder = Color(0xFFE2E8F0)
+val CardBorder = Color(0xFFD5E1F7)
 val TextPrimaryDark = Color(0xFF0F172A)
 val TextSecondarySlate = Color(0xFF64748B)
 val TextMutedUppercase = Color(0xFF475569)
@@ -52,5 +52,5 @@ val KpiAmberIcon = Color(0xFFD97706)
 val KpiAmberBg = Color(0xFFFFFBEB)
 
 // Filter Bar Container
-val FilterBarWarmBg = Color(0xFFFFFBF7)
-val FilterBarBorder = Color(0xFFFDE6D2)
+val FilterBarWarmBg = Color(0xFFF3F7FF)
+val FilterBarBorder = Color(0xFFD5E1F7)

@@ -1,12 +1,9 @@
 package com.example.auth
 
-import android.app.Activity
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +19,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -34,7 +30,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -43,11 +38,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -58,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,16 +70,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.ClearCredentialStateRequest
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.example.R
 import com.example.ui.theme.CanvasBackground
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
-import com.example.ui.theme.KpiBlueBg
 import com.example.ui.theme.KpiGreenBg
 import com.example.ui.theme.KpiGreenIcon
 import com.example.ui.theme.KpiRedBg
@@ -96,140 +81,13 @@ import com.example.ui.theme.KpiRedIcon
 import com.example.ui.theme.SidebarActiveBlue
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondarySlate
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.auth
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
-
-internal fun FirebaseAuth.authStateFlow(): Flow<FirebaseUser?> = callbackFlow {
-  val listener = FirebaseAuth.AuthStateListener { auth ->
-    trySend(auth.currentUser)
-  }
-  addAuthStateListener(listener)
-  awaitClose { removeAuthStateListener(listener) }
-}
-
-fun attemptAutoSignIn(
-  context: Context,
-  credentialManager: CredentialManager,
-  onAuthSuccess: () -> Unit,
-  onUnauthenticated: () -> Unit,
-  scope: CoroutineScope,
-) {
-  if (Firebase.auth.currentUser != null) {
-    onAuthSuccess()
-    return
-  }
-  val clientId = try {
-    context.getString(R.string.default_web_client_id)
-  } catch (e: Exception) {
-    onUnauthenticated()
-    return
-  }
-
-  val googleIdOption = GetGoogleIdOption.Builder()
-    .setFilterByAuthorizedAccounts(true)
-    .setServerClientId(clientId)
-    .setAutoSelectEnabled(true)
-    .build()
-
-  val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
-
-  scope.launch {
-    try {
-      val activityContext = context as? Activity ?: context
-      val result = credentialManager.getCredential(activityContext, request)
-      val credential = result.credential
-      if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-        val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-        val authCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
-        Firebase.auth.signInWithCredential(authCredential).await()
-        onAuthSuccess()
-      } else {
-        onUnauthenticated()
-      }
-    } catch (e: Exception) {
-      onUnauthenticated()
-    }
-  }
-}
-
-fun onGoogleSignInClicked(
-  context: Context,
-  credentialManager: CredentialManager,
-  onAuthSuccess: () -> Unit,
-  onAuthError: (String) -> Unit,
-  scope: CoroutineScope,
-  onAuthCancelled: () -> Unit = {},
-) {
-  val clientId = try {
-    context.getString(R.string.default_web_client_id)
-  } catch (e: Exception) {
-    onAuthError("Google Sign-In configuration missing: default_web_client_id not found")
-    return
-  }
-
-  val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()
-  val request = GetCredentialRequest.Builder().addCredentialOption(signInOption).build()
-
-  scope.launch {
-    try {
-      val activityContext = context as? Activity ?: context
-      val result = credentialManager.getCredential(activityContext, request)
-      val credential = result.credential
-      if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-        val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-        val authCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
-        Firebase.auth.signInWithCredential(authCredential).await()
-        onAuthSuccess()
-      } else {
-        onAuthError("Unexpected credential type")
-      }
-    } catch (e: GetCredentialCancellationException) {
-      Log.w("Auth", "Google Sign-In cancelled or dismissed: ${e.message}", e)
-      onAuthCancelled()
-    } catch (e: Exception) {
-      Log.e("Auth", "Google Sign-In failed", e)
-      onAuthError(e.localizedMessage ?: "Sign in failed")
-    }
-  }
-}
 
 fun signOut(
   context: Context,
-  credentialManager: CredentialManager,
-  scope: CoroutineScope,
-  clearGoogleSelection: Boolean = false,
   onSignOutComplete: () -> Unit = {},
 ) {
   MobileAuthStore.logout(context)
-  scope.launch {
-    withContext(NonCancellable) {
-      try {
-        if (clearGoogleSelection) {
-          credentialManager.clearCredentialState(ClearCredentialStateRequest())
-        }
-      } catch (e: Exception) {
-        Log.w("Auth", "Failed to clear credential state: ${e.message}")
-      } finally {
-        Firebase.auth.signOut()
-        onSignOutComplete()
-      }
-    }
-  }
+  onSignOutComplete()
 }
 
 @Composable
@@ -237,9 +95,7 @@ fun AuthScreen(
   onAuthSuccess: () -> Unit = {}
 ) {
   val context = LocalContext.current
-  val scope = rememberCoroutineScope()
   val focusManager = LocalFocusManager.current
-  val credentialManager = remember(context) { CredentialManager.create(context) }
 
   val hasAccount = remember { MobileAuthStore.hasRegisteredAccount(context) }
   // 0 = Login, 1 = Register
@@ -257,42 +113,9 @@ fun AuthScreen(
   var showForgotPasswordDialog by remember { mutableStateOf(false) }
 
   fun completeMobileAuth(verifiedMobile: String) {
-    if (Firebase.auth.currentUser != null) {
-      MobileAuthStore.markSessionLoggedIn(context, verifiedMobile)
-      isLoading = false
-      onAuthSuccess()
-      return
-    }
-    attemptAutoSignIn(
-      context = context,
-      credentialManager = credentialManager,
-      onAuthSuccess = {
-        MobileAuthStore.markSessionLoggedIn(context, verifiedMobile)
-        isLoading = false
-        onAuthSuccess()
-      },
-      onUnauthenticated = {
-        onGoogleSignInClicked(
-          context = context,
-          credentialManager = credentialManager,
-          onAuthSuccess = {
-            MobileAuthStore.markSessionLoggedIn(context, verifiedMobile)
-            isLoading = false
-            onAuthSuccess()
-          },
-          onAuthError = { msg ->
-            isLoading = false
-            errorMessage = msg
-          },
-          scope = scope,
-          onAuthCancelled = {
-            isLoading = false
-            errorMessage = "Cloud verification cancelled. Please verify once to sync data."
-          }
-        )
-      },
-      scope = scope
-    )
+    MobileAuthStore.markSessionLoggedIn(context, verifiedMobile)
+    isLoading = false
+    onAuthSuccess()
   }
 
   fun submitMobileForm() {
@@ -651,7 +474,7 @@ fun AuthScreen(
           }
         }
 
-        // Primary Mobile Login / Register Button
+        // Primary Mobile Login / Register Button (no email/Google prompt)
         Button(
           onClick = { submitMobileForm() },
           enabled = !isLoading,
@@ -678,72 +501,6 @@ fun AuthScreen(
               fontWeight = FontWeight.ExtraBold
             )
           }
-        }
-
-        // OR Divider + Google Sign-In Option
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          HorizontalDivider(modifier = Modifier.weight(1f), color = CardBorder)
-          Text(
-            text = "OR",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextSecondarySlate
-          )
-          HorizontalDivider(modifier = Modifier.weight(1f), color = CardBorder)
-        }
-
-        OutlinedButton(
-          onClick = {
-            focusManager.clearFocus()
-            errorMessage = null
-            infoMessage = null
-            isLoading = true
-            onGoogleSignInClicked(
-              context = context,
-              credentialManager = credentialManager,
-              onAuthSuccess = {
-                MobileAuthStore.markGoogleSessionLoggedIn(context)
-                isLoading = false
-                onAuthSuccess()
-              },
-              onAuthError = { msg ->
-                isLoading = false
-                errorMessage = msg
-              },
-              scope = scope,
-              onAuthCancelled = {
-                isLoading = false
-              }
-            )
-          },
-          enabled = !isLoading,
-          border = BorderStroke(1.dp, CardBorder),
-          shape = RoundedCornerShape(14.dp),
-          colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = KpiBlueBg.copy(alpha = 0.45f),
-            contentColor = TextPrimaryDark
-          ),
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .testTag("google_sign_in_button")
-        ) {
-          Icon(
-            imageVector = Icons.Default.Security,
-            contentDescription = null,
-            tint = SidebarActiveBlue,
-            modifier = Modifier.size(18.dp)
-          )
-          Spacer(modifier = Modifier.width(8.dp))
-          Text(
-            text = stringResource(R.string.sign_in_with_google),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-          )
         }
       }
     }
@@ -772,18 +529,15 @@ private fun ResetPasswordDialog(
   onResetSuccess: (String) -> Unit,
 ) {
   val context = LocalContext.current
-  val scope = rememberCoroutineScope()
-  val credentialManager = remember(context) { CredentialManager.create(context) }
 
   var resetMobile by remember { mutableStateOf(initialMobile) }
   var newPassword by remember { mutableStateOf("") }
   var confirmNewPassword by remember { mutableStateOf("") }
   var showPwd by remember { mutableStateOf(false) }
-  var isVerifying by remember { mutableStateOf(false) }
   var dialogError by remember { mutableStateOf<String?>(null) }
 
   AlertDialog(
-    onDismissRequest = { if (!isVerifying) onDismiss() },
+    onDismissRequest = onDismiss,
     containerColor = CardSurface,
     shape = RoundedCornerShape(18.dp),
     title = {
@@ -855,46 +609,17 @@ private fun ResetPasswordDialog(
       Button(
         onClick = {
           dialogError = null
-          if (Firebase.auth.currentUser != null) {
-            MobileAuthStore.resetPassword(context, resetMobile, newPassword, confirmNewPassword)
-              .onSuccess { onResetSuccess(it) }
-              .onFailure { dialogError = it.message }
-          } else {
-            // Verify user identity via Google Sign-In before resetting password
-            isVerifying = true
-            onGoogleSignInClicked(
-              context = context,
-              credentialManager = credentialManager,
-              onAuthSuccess = {
-                isVerifying = false
-                MobileAuthStore.resetPassword(context, resetMobile, newPassword, confirmNewPassword)
-                  .onSuccess { onResetSuccess(it) }
-                  .onFailure { dialogError = it.message }
-              },
-              onAuthError = { msg ->
-                isVerifying = false
-                dialogError = msg
-              },
-              scope = scope,
-              onAuthCancelled = {
-                isVerifying = false
-                dialogError = "Verification cancelled."
-              }
-            )
-          }
+          MobileAuthStore.resetPassword(context, resetMobile, newPassword, confirmNewPassword)
+            .onSuccess { onResetSuccess(it) }
+            .onFailure { dialogError = it.message }
         },
-        enabled = !isVerifying,
         colors = ButtonDefaults.buttonColors(containerColor = SidebarActiveBlue)
       ) {
-        if (isVerifying) {
-          CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-        } else {
-          Text("Update Password", fontWeight = FontWeight.Bold)
-        }
+        Text("Update Password", fontWeight = FontWeight.Bold)
       }
     },
     dismissButton = {
-      TextButton(onClick = onDismiss, enabled = !isVerifying) {
+      TextButton(onClick = onDismiss) {
         Text("Cancel")
       }
     }

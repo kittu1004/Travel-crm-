@@ -9,7 +9,6 @@
     <string name="live_realized_inflows">LIVE REALIZED INFLOWS</string>
     <string name="refresh_revenue">Refresh Revenue</string>
     <string name="select_category_prompt">SELECT CATEGORY TO VIEW DETAILS:</string>
-    <string name="sign_in_with_google">Sign in with Google</string>
     <string name="mobile_number_label">Mobile Number</string>
     <string name="mobile_number_placeholder">Enter 10-digit mobile number</string>
     <string name="password_label">Password</string>

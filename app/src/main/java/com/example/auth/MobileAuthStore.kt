@@ -75,12 +75,6 @@ object MobileAuthStore {
       .apply()
   }
 
-  fun markGoogleSessionLoggedIn(context: Context) {
-    prefs(context).edit()
-      .putBoolean(KEY_IS_LOGGED_IN, true)
-      .apply()
-  }
-
   fun logout(context: Context) {
     prefs(context).edit()
       .putBoolean(KEY_IS_LOGGED_IN, false)
